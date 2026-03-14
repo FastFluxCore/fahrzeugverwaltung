@@ -42,10 +42,10 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: String.fromEnvironment('FIREBASE_API_KEY'),
-    appId: String.fromEnvironment('FIREBASE_APP_ID'),
-    messagingSenderId: String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID'),
-    projectId: String.fromEnvironment('FIREBASE_PROJECT_ID'),
-    authDomain: String.fromEnvironment('FIREBASE_AUTH_DOMAIN'),
-    storageBucket: String.fromEnvironment('FIREBASE_STORAGE_BUCKET'),
+    appId: '1:548609433520:web:e462c2c6aa78f4aba90075',
+    messagingSenderId: '548609433520',
+    projectId: 'fahrzeugverwaltung-97f4e',
+    authDomain: 'fahrzeugverwaltung-97f4e.firebaseapp.com',
+    storageBucket: 'fahrzeugverwaltung-97f4e.firebasestorage.app',
   );
 }
