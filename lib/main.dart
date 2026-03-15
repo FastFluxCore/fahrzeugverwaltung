@@ -3,7 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
 import 'firebase_options.dart';
-import 'screens/home_screen.dart';
+import 'screens/app_shell.dart';
 import 'screens/login_screen.dart';
 import 'services/auth_service.dart';
 
@@ -36,7 +36,7 @@ class MyApp extends StatelessWidget {
             );
           }
           if (snapshot.hasData) {
-            return const HomeScreen();
+            return const AppShell();
           }
           return const LoginScreen();
         },
