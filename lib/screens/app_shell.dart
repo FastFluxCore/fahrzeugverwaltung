@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/vehicle.dart';
 import 'cost_screen.dart';
 import 'dashboard_screen.dart';
+import 'profile_screen.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -157,7 +158,10 @@ class _AppShellState extends State<AppShell> {
       ),
       const SizedBox.shrink(), // Placeholder for FAB
       const _PlaceholderScreen(title: 'Logbuch'),
-      const _PlaceholderScreen(title: 'Profil'),
+      ProfileScreen(
+        vehicles: _vehicles,
+        selectedVehicle: _selectedVehicle,
+      ),
     ];
 
     return Scaffold(
