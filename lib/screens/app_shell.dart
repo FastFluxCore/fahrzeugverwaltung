@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/vehicle.dart';
 import 'cost_screen.dart';
 import 'dashboard_screen.dart';
+import 'profile_screen.dart';
 import 'logbook_screen.dart';
 
 class AppShell extends StatefulWidget {
@@ -157,6 +158,11 @@ class _AppShellState extends State<AppShell> {
         onVehicleChanged: _onVehicleChanged,
       ),
       const SizedBox.shrink(), // Placeholder for FAB
+      const _PlaceholderScreen(title: 'Logbuch'),
+      ProfileScreen(
+        vehicles: _vehicles,
+        selectedVehicle: _selectedVehicle,
+      ),
       LogbookScreen(
         vehicles: _vehicles,
         selectedVehicle: _selectedVehicle,
