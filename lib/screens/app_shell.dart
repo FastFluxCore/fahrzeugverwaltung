@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../models/vehicle.dart';
+import 'cost_screen.dart';
 import 'dashboard_screen.dart';
 
 class AppShell extends StatefulWidget {
@@ -11,13 +13,32 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = [
-    const DashboardScreen(),
-    const _PlaceholderScreen(title: 'Kosten'),
-    const SizedBox.shrink(), // Placeholder for FAB
-    const _PlaceholderScreen(title: 'Logbuch'),
-    const _PlaceholderScreen(title: 'Profil'),
+  // TODO: Replace with Firestore data
+  final List<Vehicle> _vehicles = [
+    Vehicle(
+      id: '1',
+      brand: 'Audi',
+      model: 'A4',
+      year: 2026,
+      horsepower: 150,
+      transmission: 'Automatik',
+      fuelType: 'Benzin',
+      licensePlate: 'B-AU 2026',
+      mileage: 12450,
+    ),
   ];
+
+  late Vehicle _selectedVehicle;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedVehicle = _vehicles.first;
+  }
+
+  void _onVehicleChanged(Vehicle? vehicle) {
+    if (vehicle != null) setState(() => _selectedVehicle = vehicle);
+  }
 
   void _onTabTapped(int index) {
     if (index == 2) {
@@ -123,8 +144,24 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
+    final screens = [
+      DashboardScreen(
+        vehicles: _vehicles,
+        selectedVehicle: _selectedVehicle,
+        onVehicleChanged: _onVehicleChanged,
+      ),
+      CostScreen(
+        vehicles: _vehicles,
+        selectedVehicle: _selectedVehicle,
+        onVehicleChanged: _onVehicleChanged,
+      ),
+      const SizedBox.shrink(), // Placeholder for FAB
+      const _PlaceholderScreen(title: 'Logbuch'),
+      const _PlaceholderScreen(title: 'Profil'),
+    ];
+
     return Scaffold(
-      body: _screens[_currentIndex],
+      body: screens[_currentIndex],
       bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(),
         notchMargin: 8,
@@ -137,7 +174,7 @@ class _AppShellState extends State<AppShell> {
             children: [
               _buildNavItem(0, Icons.home_outlined, Icons.home, 'Home'),
               _buildNavItem(1, Icons.euro_outlined, Icons.euro, 'Kosten'),
-              const SizedBox(width: 48), // Space for FAB
+              const SizedBox(width: 48),
               _buildNavItem(
                   3, Icons.menu_book_outlined, Icons.menu_book, 'Logbuch'),
               _buildNavItem(

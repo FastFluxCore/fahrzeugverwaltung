@@ -5,83 +5,65 @@ import '../widgets/entry_card.dart';
 import '../widgets/summary_card.dart';
 import '../widgets/vehicle_selector.dart';
 
-class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+class DashboardScreen extends StatelessWidget {
+  final List<Vehicle> vehicles;
+  final Vehicle selectedVehicle;
+  final ValueChanged<Vehicle?> onVehicleChanged;
 
-  @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
-}
+  const DashboardScreen({
+    super.key,
+    required this.vehicles,
+    required this.selectedVehicle,
+    required this.onVehicleChanged,
+  });
 
-class _DashboardScreenState extends State<DashboardScreen> {
   // TODO: Replace with Firestore data
-  final List<Vehicle> _vehicles = [
-    Vehicle(
-      id: '1',
-      brand: 'Audi',
-      model: 'A4',
-      year: 2026,
-      horsepower: 150,
-      transmission: 'Automatik',
-      fuelType: 'Benzin',
-      licensePlate: 'B-AU 2026',
-      mileage: 12450,
-    ),
-  ];
-
-  late Vehicle _selectedVehicle;
-
-  final List<Entry> _recentEntries = [
-    Entry(
-      id: '1',
-      type: EntryType.fuel,
-      date: DateTime(2023, 10, 13, 18, 45),
-      cost: 84.20,
-      description: 'Tanken',
-      subtitle: 'Gestern, 18:45 Uhr',
-      liters: 54.2,
-    ),
-    Entry(
-      id: '2',
-      type: EntryType.service,
-      date: DateTime(2023, 10, 12),
-      cost: 210.00,
-      description: 'Service',
-      subtitle: '12. Okt 2023',
-    ),
-    Entry(
-      id: '3',
-      type: EntryType.otherCost,
-      date: DateTime(2023, 10, 8),
-      cost: 2.00,
-      description: 'Parkgebühren',
-      subtitle: '08. Okt 2023',
-      category: 'Parkgebühren',
-    ),
-    Entry(
-      id: '4',
-      type: EntryType.otherCost,
-      date: DateTime(2023, 10, 8),
-      cost: 4.50,
-      description: 'Parkgebühren',
-      subtitle: '08. Okt 2023',
-      category: 'Parkgebühren',
-    ),
-    Entry(
-      id: '5',
-      type: EntryType.fuel,
-      date: DateTime(2023, 10, 1),
-      cost: 50.01,
-      description: 'Tanken',
-      subtitle: '01. Okt 2023',
-      liters: 31.6,
-    ),
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedVehicle = _vehicles.first;
-  }
+  List<Entry> get _recentEntries => [
+        Entry(
+          id: '1',
+          type: EntryType.fuel,
+          date: DateTime(2023, 10, 13, 18, 45),
+          cost: 84.20,
+          description: 'Tanken',
+          subtitle: 'Gestern, 18:45 Uhr',
+          liters: 54.2,
+        ),
+        Entry(
+          id: '2',
+          type: EntryType.service,
+          date: DateTime(2023, 10, 12),
+          cost: 210.00,
+          description: 'Service',
+          subtitle: '12. Okt 2023',
+        ),
+        Entry(
+          id: '3',
+          type: EntryType.otherCost,
+          date: DateTime(2023, 10, 8),
+          cost: 2.00,
+          description: 'Parkgebühren',
+          subtitle: '08. Okt 2023',
+          category: 'Parkgebühren',
+        ),
+        Entry(
+          id: '4',
+          type: EntryType.otherCost,
+          date: DateTime(2023, 10, 8),
+          cost: 4.50,
+          description: 'Parkgebühren',
+          subtitle: '08. Okt 2023',
+          category: 'Parkgebühren',
+        ),
+        Entry(
+          id: '5',
+          type: EntryType.fuel,
+          date: DateTime(2023, 10, 1),
+          cost: 50.01,
+          description: 'Tanken',
+          subtitle: '01. Okt 2023',
+          liters: 31.6,
+        ),
+      ];
 
   @override
   Widget build(BuildContext context) {
@@ -102,14 +84,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             VehicleSelector(
-              selectedVehicle: _selectedVehicle,
-              vehicles: _vehicles,
-              onChanged: (v) {
-                if (v != null) setState(() => _selectedVehicle = v);
-              },
+              selectedVehicle: selectedVehicle,
+              vehicles: vehicles,
+              onChanged: onVehicleChanged,
             ),
             const SizedBox(height: 8),
-            // Zusammenfassung
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
@@ -135,7 +114,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   SummaryCard(
                     icon: Icons.speed,
-                    value: '${_formatNumber(_selectedVehicle.mileage)} km',
+                    value: '${_formatNumber(selectedVehicle.mileage)} km',
                     label: 'Kilometerstand',
                   ),
                   const SummaryCard(
@@ -158,7 +137,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            // Letzte Einträge
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
