@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import '../models/vehicle.dart';
+import '../services/vehicle_service.dart';
+import 'add_vehicle_screen.dart';
 import 'cost_screen.dart';
 import 'dashboard_screen.dart';
-import 'profile_screen.dart';
 import 'logbook_screen.dart';
+import 'profile_screen.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -14,28 +16,16 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int _currentIndex = 0;
-
-  // TODO: Replace with Firestore data
-  final List<Vehicle> _vehicles = [
-    Vehicle(
-      id: '1',
-      brand: 'Audi',
-      model: 'A4',
-      year: 2026,
-      horsepower: 150,
-      transmission: 'Automatik',
-      fuelType: 'Benzin',
-      licensePlate: 'B-AU 2026',
-      mileage: 12450,
-    ),
-  ];
-
-  late Vehicle _selectedVehicle;
+  final _vehicleService = VehicleService();
+  Vehicle? _selectedVehicle;
+  List<Vehicle> _vehicles = [];
+  bool _initialLoaded = false;
+  late final Stream<List<Vehicle>> _vehicleStream;
 
   @override
   void initState() {
     super.initState();
-    _selectedVehicle = _vehicles.first;
+    _vehicleStream = _vehicleService.getVehicles();
   }
 
   void _onVehicleChanged(Vehicle? vehicle) {
@@ -146,63 +136,173 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
-    final screens = [
-      DashboardScreen(
-        vehicles: _vehicles,
-        selectedVehicle: _selectedVehicle,
-        onVehicleChanged: _onVehicleChanged,
-      ),
-      CostScreen(
-        vehicles: _vehicles,
-        selectedVehicle: _selectedVehicle,
-        onVehicleChanged: _onVehicleChanged,
-      ),
-      const SizedBox.shrink(), // Placeholder for FAB
-      LogbookScreen(
-        vehicles: _vehicles,
-        selectedVehicle: _selectedVehicle,
-        onVehicleChanged: _onVehicleChanged,
-      ),
-      ProfileScreen(
-        vehicles: _vehicles,
-        selectedVehicle: _selectedVehicle,
-      ),
-    ];
+    return StreamBuilder<List<Vehicle>>(
+      stream: _vehicleStream,
+      builder: (context, snapshot) {
+        // Only show loading on initial load
+        if (!_initialLoaded &&
+            snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
 
-    return Scaffold(
-      body: screens[_currentIndex],
-      bottomNavigationBar: BottomAppBar(
-        shape: const CircularNotchedRectangle(),
-        notchMargin: 8,
-        color: Colors.white,
-        elevation: 8,
-        child: SizedBox(
-          height: 60,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+        if (snapshot.hasData) {
+          _vehicles = snapshot.data!;
+          _initialLoaded = true;
+        }
+
+        // No vehicles yet — show add vehicle screen
+        if (_vehicles.isEmpty) {
+          return _buildEmptyState();
+        }
+
+        // Auto-select first vehicle or keep selection
+        if (_selectedVehicle == null ||
+            !_vehicles.any((v) => v.id == _selectedVehicle!.id)) {
+          _selectedVehicle = _vehicles.first;
+        } else {
+          // Update selected vehicle with latest data
+          _selectedVehicle =
+              _vehicles.firstWhere((v) => v.id == _selectedVehicle!.id);
+        }
+
+        final screens = [
+          DashboardScreen(
+            vehicles: _vehicles,
+            selectedVehicle: _selectedVehicle!,
+            onVehicleChanged: _onVehicleChanged,
+          ),
+          CostScreen(
+            vehicles: _vehicles,
+            selectedVehicle: _selectedVehicle!,
+            onVehicleChanged: _onVehicleChanged,
+          ),
+          const SizedBox.shrink(),
+          LogbookScreen(
+            vehicles: _vehicles,
+            selectedVehicle: _selectedVehicle!,
+            onVehicleChanged: _onVehicleChanged,
+          ),
+          ProfileScreen(
+            vehicles: _vehicles,
+            selectedVehicle: _selectedVehicle!,
+          ),
+        ];
+
+        return Scaffold(
+          body: IndexedStack(
+            index: _currentIndex < 2 ? _currentIndex : _currentIndex - 1,
             children: [
-              _buildNavItem(0, Icons.home_outlined, Icons.home, 'Home'),
-              _buildNavItem(1, Icons.euro_outlined, Icons.euro, 'Kosten'),
-              const SizedBox(width: 48),
-              _buildNavItem(
-                  3, Icons.menu_book_outlined, Icons.menu_book, 'Logbuch'),
-              _buildNavItem(
-                  4, Icons.person_outline, Icons.person, 'Profil'),
+              screens[0],
+              screens[1],
+              screens[3],
+              screens[4],
+            ],
+          ),
+          bottomNavigationBar: BottomAppBar(
+            shape: const CircularNotchedRectangle(),
+            notchMargin: 8,
+            color: Colors.white,
+            elevation: 8,
+            child: SizedBox(
+              height: 60,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildNavItem(0, Icons.home_outlined, Icons.home, 'Home'),
+                  _buildNavItem(
+                      1, Icons.euro_outlined, Icons.euro, 'Kosten'),
+                  const SizedBox(width: 48),
+                  _buildNavItem(
+                      3, Icons.menu_book_outlined, Icons.menu_book, 'Logbuch'),
+                  _buildNavItem(
+                      4, Icons.person_outline, Icons.person, 'Profil'),
+                ],
+              ),
+            ),
+          ),
+          floatingActionButton: SizedBox(
+            width: 56,
+            height: 56,
+            child: FloatingActionButton(
+              onPressed: _showAddEntrySheet,
+              backgroundColor: const Color(0xFF1A5276),
+              shape: const CircleBorder(),
+              child: const Icon(Icons.add, color: Colors.white, size: 28),
+            ),
+          ),
+          floatingActionButtonLocation:
+              FloatingActionButtonLocation.centerDocked,
+        );
+      },
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FB),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 88,
+                height: 88,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1A5276).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Icon(Icons.directions_car,
+                    color: Color(0xFF1A5276), size: 48),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Kein Fahrzeug vorhanden',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1A1A2E),
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Fügen Sie Ihr erstes Fahrzeug hinzu,\num loszulegen.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 15, color: Color(0xFF8E8E93)),
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const AddVehicleScreen()),
+                    );
+                  },
+                  icon: const Icon(Icons.add),
+                  label: const Text(
+                    'Fahrzeug hinzufügen',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1A5276),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
       ),
-      floatingActionButton: SizedBox(
-        width: 56,
-        height: 56,
-        child: FloatingActionButton(
-          onPressed: _showAddEntrySheet,
-          backgroundColor: const Color(0xFF1A5276),
-          shape: const CircleBorder(),
-          child: const Icon(Icons.add, color: Colors.white, size: 28),
-        ),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 
@@ -217,7 +317,8 @@ class _AppShellState extends State<AppShell> {
         children: [
           Icon(
             isActive ? activeIcon : icon,
-            color: isActive ? const Color(0xFF1A5276) : const Color(0xFF8E8E93),
+            color:
+                isActive ? const Color(0xFF1A5276) : const Color(0xFF8E8E93),
             size: 24,
           ),
           const SizedBox(height: 4),
@@ -225,8 +326,9 @@ class _AppShellState extends State<AppShell> {
             label,
             style: TextStyle(
               fontSize: 11,
-              color:
-                  isActive ? const Color(0xFF1A5276) : const Color(0xFF8E8E93),
+              color: isActive
+                  ? const Color(0xFF1A5276)
+                  : const Color(0xFF8E8E93),
               fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
             ),
           ),
@@ -235,4 +337,3 @@ class _AppShellState extends State<AppShell> {
     );
   }
 }
-
