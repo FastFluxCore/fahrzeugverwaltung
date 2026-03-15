@@ -158,17 +158,15 @@ class _AppShellState extends State<AppShell> {
         onVehicleChanged: _onVehicleChanged,
       ),
       const SizedBox.shrink(), // Placeholder for FAB
-      const _PlaceholderScreen(title: 'Logbuch'),
-      ProfileScreen(
-        vehicles: _vehicles,
-        selectedVehicle: _selectedVehicle,
-      ),
       LogbookScreen(
         vehicles: _vehicles,
         selectedVehicle: _selectedVehicle,
         onVehicleChanged: _onVehicleChanged,
       ),
-      const _PlaceholderScreen(title: 'Profil'),
+      ProfileScreen(
+        vehicles: _vehicles,
+        selectedVehicle: _selectedVehicle,
+      ),
     ];
 
     return Scaffold(
@@ -238,29 +236,3 @@ class _AppShellState extends State<AppShell> {
   }
 }
 
-class _PlaceholderScreen extends StatelessWidget {
-  final String title;
-
-  const _PlaceholderScreen({required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FB),
-      appBar: AppBar(
-        title: Text(title,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
-        centerTitle: true,
-        backgroundColor: const Color(0xFFF8F9FB),
-        elevation: 0,
-        scrolledUnderElevation: 0,
-      ),
-      body: Center(
-        child: Text(
-          '$title kommt bald...',
-          style: const TextStyle(fontSize: 16, color: Color(0xFF8E8E93)),
-        ),
-      ),
-    );
-  }
-}
