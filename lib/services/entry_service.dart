@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/entry.dart';
@@ -79,20 +81,40 @@ class EntryService {
     await _vehicleRef(vehicleId).collection('otherCosts').doc(entryId).delete();
   }
 
-  // All entries combined
+  // All entries combined — reacts to changes in any of the three collections
   Stream<List<Entry>> getAllEntries(String vehicleId) {
-    final fuelStream = getFuelLogs(vehicleId);
-    final serviceStream = getServices(vehicleId);
-    final otherCostStream = getOtherCosts(vehicleId);
+    final controller = StreamController<List<Entry>>();
 
-    return fuelStream.asyncExpand((fuelLogs) {
-      return serviceStream.asyncExpand((services) {
-        return otherCostStream.map((otherCosts) {
-          final all = [...fuelLogs, ...services, ...otherCosts];
-          all.sort((a, b) => b.date.compareTo(a.date));
-          return all;
-        });
-      });
+    List<Entry> fuel = [];
+    List<Entry> services = [];
+    List<Entry> other = [];
+
+    void emit() {
+      final all = [...fuel, ...services, ...other];
+      all.sort((a, b) => b.date.compareTo(a.date));
+      controller.add(all);
+    }
+
+    final sub1 = getFuelLogs(vehicleId).listen((data) {
+      fuel = data;
+      emit();
     });
+    final sub2 = getServices(vehicleId).listen((data) {
+      services = data;
+      emit();
+    });
+    final sub3 = getOtherCosts(vehicleId).listen((data) {
+      other = data;
+      emit();
+    });
+
+    controller.onCancel = () {
+      sub1.cancel();
+      sub2.cancel();
+      sub3.cancel();
+      controller.close();
+    };
+
+    return controller.stream;
   }
 }

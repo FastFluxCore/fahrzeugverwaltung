@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import '../models/entry.dart';
+import '../services/entry_service.dart';
 import '../models/vehicle.dart';
 import '../widgets/vehicle_selector.dart';
+import 'add_fuel_screen.dart';
+import 'add_other_cost_screen.dart';
+import 'add_service_screen.dart';
 
 class LogbookScreen extends StatefulWidget {
   final List<Vehicle> vehicles;
@@ -20,98 +24,80 @@ class LogbookScreen extends StatefulWidget {
 }
 
 class _LogbookScreenState extends State<LogbookScreen> {
+  final _entryService = EntryService();
   int _selectedFilter = 0;
   final List<String> _filters = ['Alle', 'Service', 'Tanken', 'Sonstige'];
   final TextEditingController _searchController = TextEditingController();
 
-  // TODO: Replace with Firestore data
-  final List<Entry> _entries = [
-    Entry(
-      id: '1',
-      type: EntryType.service,
-      date: DateTime(2026, 3, 14),
-      cost: 342.50,
-      mileage: 45200,
-      description: 'Inspektion & Ölwechsel',
-      subtitle: 'KFZ-Meisterbetrieb Schmidt',
-      serviceType: 'Inspektion',
-      workshop: 'KFZ-Meisterbetrieb Schmidt',
-    ),
-    Entry(
-      id: '2',
-      type: EntryType.fuel,
-      date: DateTime(2026, 3, 8),
-      cost: 84.12,
-      description: 'Tanken',
-      subtitle: 'Aral',
-      liters: 42.5,
-      pricePerLiter: 1.979,
-      station: 'Aral',
-    ),
-    Entry(
-      id: '3',
-      type: EntryType.otherCost,
-      date: DateTime(2026, 2, 1),
-      cost: 128.90,
-      description: 'Kfz-Versicherung',
-      subtitle: 'HUK-Coburg (Vierteljährlich)',
-      category: 'Versicherung',
-      interval: 'vierteljährlich',
-    ),
-    Entry(
-      id: '4',
-      type: EntryType.fuel,
-      date: DateTime(2026, 1, 22),
-      cost: 76.55,
-      description: 'Tanken',
-      subtitle: 'Shell',
-      liters: 38.7,
-      pricePerLiter: 1.979,
-      station: 'Shell',
-    ),
-    Entry(
-      id: '5',
-      type: EntryType.fuel,
-      date: DateTime(2026, 1, 24),
-      cost: 65.30,
-      description: 'Tanken',
-      subtitle: 'Total',
-      liters: 33.1,
-      pricePerLiter: 1.972,
-      station: 'Total',
-    ),
-  ];
-
-  List<Entry> get _filteredEntries {
-    var entries = _entries;
+  List<Entry> _applyFilters(List<Entry> entries) {
+    var filtered = entries;
     if (_selectedFilter == 1) {
-      entries = entries.where((e) => e.type == EntryType.service).toList();
+      filtered = filtered.where((e) => e.type == EntryType.service).toList();
     } else if (_selectedFilter == 2) {
-      entries = entries.where((e) => e.type == EntryType.fuel).toList();
+      filtered = filtered.where((e) => e.type == EntryType.fuel).toList();
     } else if (_selectedFilter == 3) {
-      entries = entries.where((e) => e.type == EntryType.otherCost).toList();
+      filtered = filtered.where((e) => e.type == EntryType.otherCost).toList();
     }
 
     final query = _searchController.text.toLowerCase();
     if (query.isNotEmpty) {
-      entries = entries
+      filtered = filtered
           .where((e) =>
               e.description.toLowerCase().contains(query) ||
               (e.subtitle?.toLowerCase().contains(query) ?? false))
           .toList();
     }
 
-    entries.sort((a, b) => b.date.compareTo(a.date));
-    return entries;
+    return filtered;
   }
 
-  Map<String, List<Entry>> get _groupedEntries {
+  Map<String, List<Entry>> _groupByMonth(List<Entry> entries) {
     final map = <String, List<Entry>>{};
-    for (final entry in _filteredEntries) {
+    for (final entry in entries) {
       final key = _monthYearKey(entry.date);
       map.putIfAbsent(key, () => []).add(entry);
     }
     return map;
+  }
+
+  void _openEditScreen(Entry entry) {
+    final vehicleId = widget.selectedVehicle.id;
+    final mileage = widget.selectedVehicle.mileage;
+
+    Widget screen;
+    switch (entry.type) {
+      case EntryType.fuel:
+        screen = AddFuelScreen(
+          vehicleId: vehicleId,
+          currentMileage: mileage,
+          entry: entry,
+        );
+      case EntryType.service:
+        screen = AddServiceScreen(
+          vehicleId: vehicleId,
+          currentMileage: mileage,
+          entry: entry,
+        );
+      case EntryType.otherCost:
+        screen = AddOtherCostScreen(
+          vehicleId: vehicleId,
+          entry: entry,
+        );
+    }
+
+    Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+  }
+
+  Future<void> _deleteEntry(Entry entry) async {
+    final vehicleId = widget.selectedVehicle.id;
+    switch (entry.type) {
+      case EntryType.fuel:
+        await _entryService.deleteFuelLog(vehicleId, entry.id);
+      case EntryType.service:
+        await _entryService.deleteService(vehicleId, entry.id);
+      case EntryType.otherCost:
+        await _entryService.deleteOtherCost(vehicleId, entry.id);
+    }
   }
 
   @override
@@ -122,8 +108,6 @@ class _LogbookScreenState extends State<LogbookScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final grouped = _groupedEntries;
-
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FB),
       appBar: AppBar(
@@ -212,22 +196,37 @@ class _LogbookScreenState extends State<LogbookScreen> {
           const Divider(height: 1, color: Color(0xFFE8ECF0)),
           // Timeline entries
           Expanded(
-            child: grouped.isEmpty
-                ? const Center(
+            child: StreamBuilder<List<Entry>>(
+              stream: _entryService.getAllEntries(widget.selectedVehicle.id),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final allEntries = snapshot.data ?? [];
+                final filtered = _applyFilters(allEntries);
+                final grouped = _groupByMonth(filtered);
+
+                if (grouped.isEmpty) {
+                  return const Center(
                     child: Text(
                       'Keine Einträge gefunden',
                       style: TextStyle(fontSize: 15, color: Color(0xFF8E8E93)),
                     ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.only(bottom: 80),
-                    itemCount: grouped.length,
-                    itemBuilder: (context, index) {
-                      final monthKey = grouped.keys.elementAt(index);
-                      final entries = grouped[monthKey]!;
-                      return _buildMonthSection(monthKey, entries);
-                    },
-                  ),
+                  );
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.only(bottom: 80),
+                  itemCount: grouped.length,
+                  itemBuilder: (context, index) {
+                    final monthKey = grouped.keys.elementAt(index);
+                    final entries = grouped[monthKey]!;
+                    return _buildMonthSection(monthKey, entries);
+                  },
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -258,18 +257,28 @@ class _LogbookScreenState extends State<LogbookScreen> {
   Widget _buildTimelineEntry(Entry entry) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
-      child: InkWell(
-        onTap: () {
-          // TODO: Open detail view
-        },
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          padding: const EdgeInsets.all(16),
+      child: Dismissible(
+        key: ValueKey(entry.id),
+        direction: DismissDirection.endToStart,
+        confirmDismiss: (_) => _confirmDismiss(entry),
+        background: Container(
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 20),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: const Color(0xFFC62828),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFE8ECF0)),
           ),
+          child: const Icon(Icons.delete, color: Colors.white),
+        ),
+        child: GestureDetector(
+          onTap: () => _openEditScreen(entry),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFE8ECF0)),
+            ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -345,8 +354,36 @@ class _LogbookScreenState extends State<LogbookScreen> {
             ],
           ),
         ),
+        ),
       ),
     );
+  }
+
+  Future<bool> _confirmDismiss(Entry entry) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Eintrag löschen'),
+        content: Text('„${entry.description}" wirklich löschen?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Abbrechen'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFFC62828)),
+            child: const Text('Löschen'),
+          ),
+        ],
+      ),
+    );
+    if (result == true) {
+      await _deleteEntry(entry);
+      return true;
+    }
+    return false;
   }
 
   Widget _buildEntryIcon(Entry entry) {
