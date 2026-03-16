@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme.dart';
 import '../models/vehicle.dart';
 import '../services/vehicle_service.dart';
 import 'add_fuel_screen.dart';
@@ -46,6 +47,7 @@ class _AppShellState extends State<AppShell> {
   void _showAddEntrySheet() {
     showModalBottomSheet(
       context: context,
+      backgroundColor: context.cardColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -58,14 +60,14 @@ class _AppShellState extends State<AppShell> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: const Color(0xFFD0D0D0),
+                color: context.borderColor,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
+            Text(
               'Neuer Eintrag',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.textPrimary),
             ),
             const SizedBox(height: 20),
             _buildAddOption(
@@ -229,7 +231,7 @@ class _AppShellState extends State<AppShell> {
           bottomNavigationBar: BottomAppBar(
             shape: const CircularNotchedRectangle(),
             notchMargin: 8,
-            color: Colors.white,
+            color: context.bottomBarColor,
             elevation: 8,
             child: SizedBox(
               height: 60,
@@ -267,7 +269,7 @@ class _AppShellState extends State<AppShell> {
 
   Widget _buildEmptyState() {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FB),
+      backgroundColor: context.bgColor,
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
@@ -278,26 +280,26 @@ class _AppShellState extends State<AppShell> {
                 width: 88,
                 height: 88,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1A5276).withValues(alpha: 0.1),
+                  color: context.brandLight,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: const Icon(Icons.directions_car,
                     color: Color(0xFF1A5276), size: 48),
               ),
               const SizedBox(height: 24),
-              const Text(
+              Text(
                 'Kein Fahrzeug vorhanden',
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1A1A2E),
+                  color: context.textPrimary,
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Fügen Sie Ihr erstes Fahrzeug hinzu,\num loszulegen.',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 15, color: Color(0xFF8E8E93)),
+                style: TextStyle(fontSize: 15, color: context.textSecondary),
               ),
               const SizedBox(height: 32),
               SizedBox(
@@ -344,7 +346,7 @@ class _AppShellState extends State<AppShell> {
           Icon(
             isActive ? activeIcon : icon,
             color:
-                isActive ? const Color(0xFF1A5276) : const Color(0xFF8E8E93),
+                isActive ? const Color(0xFF1A5276) : context.textSecondary,
             size: 24,
           ),
           const SizedBox(height: 4),
@@ -354,7 +356,7 @@ class _AppShellState extends State<AppShell> {
               fontSize: 11,
               color: isActive
                   ? const Color(0xFF1A5276)
-                  : const Color(0xFF8E8E93),
+                  : context.textSecondary,
               fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
             ),
           ),

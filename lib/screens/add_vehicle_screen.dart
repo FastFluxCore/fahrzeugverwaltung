@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/vehicle.dart';
 import '../services/vehicle_service.dart';
+import '../theme.dart';
 
 class AddVehicleScreen extends StatefulWidget {
   final Vehicle? vehicle; // null = add, non-null = edit
@@ -97,14 +98,14 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FB),
+      backgroundColor: context.bgColor,
       appBar: AppBar(
         title: Text(
           _isEditing ? 'Fahrzeug bearbeiten' : 'Fahrzeug hinzufügen',
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
         ),
         centerTitle: true,
-        backgroundColor: const Color(0xFFF8F9FB),
+        backgroundColor: context.bgColor,
         elevation: 0,
         scrolledUnderElevation: 0,
       ),
@@ -187,6 +188,23 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
     );
   }
 
+  InputDecoration _inputDecoration(BuildContext context, String label, {String? hint}) {
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      filled: true,
+      fillColor: context.inputFill,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: context.borderColor),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: context.borderColor),
+      ),
+    );
+  }
+
   Widget _buildTextField(
     TextEditingController controller,
     String label,
@@ -197,20 +215,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
       controller: controller,
       keyboardType: keyboardType,
       validator: (v) => (v == null || v.trim().isEmpty) ? 'Pflichtfeld' : null,
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-        filled: true,
-        fillColor: Colors.white,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFE8ECF0)),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFE8ECF0)),
-        ),
-      ),
+      decoration: _inputDecoration(context, label, hint: hint),
     );
   }
 
@@ -226,19 +231,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
           .map((item) => DropdownMenuItem(value: item, child: Text(item)))
           .toList(),
       onChanged: onChanged,
-      decoration: InputDecoration(
-        labelText: label,
-        filled: true,
-        fillColor: Colors.white,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFE8ECF0)),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFE8ECF0)),
-        ),
-      ),
+      decoration: _inputDecoration(context, label),
     );
   }
 }

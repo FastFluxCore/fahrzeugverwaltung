@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../models/entry.dart';
 import '../services/entry_service.dart';
+import '../services/settings_service.dart';
 import '../models/vehicle.dart';
+import '../theme.dart';
 import '../widgets/vehicle_selector.dart';
 import 'add_fuel_screen.dart';
 import 'add_other_cost_screen.dart';
@@ -25,6 +27,7 @@ class LogbookScreen extends StatefulWidget {
 
 class _LogbookScreenState extends State<LogbookScreen> {
   final _entryService = EntryService();
+  final _settings = SettingsService();
   int _selectedFilter = 0;
   final List<String> _filters = ['Alle', 'Service', 'Tanken', 'Sonstige'];
   final TextEditingController _searchController = TextEditingController();
@@ -109,14 +112,14 @@ class _LogbookScreenState extends State<LogbookScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FB),
+      backgroundColor: context.bgColor,
       appBar: AppBar(
         title: const Text(
           'Logbuch',
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
         ),
         centerTitle: true,
-        backgroundColor: const Color(0xFFF8F9FB),
+        backgroundColor: context.bgColor,
         elevation: 0,
         scrolledUnderElevation: 0,
       ),
@@ -136,13 +139,13 @@ class _LogbookScreenState extends State<LogbookScreen> {
               onChanged: (_) => setState(() {}),
               decoration: InputDecoration(
                 hintText: 'Einträge durchsuchen...',
-                hintStyle: const TextStyle(
-                  color: Color(0xFF8E8E93),
+                hintStyle: TextStyle(
+                  color: context.textSecondary,
                   fontSize: 15,
                 ),
-                prefixIcon: const Icon(Icons.search, color: Color(0xFF8E8E93)),
+                prefixIcon: Icon(Icons.search, color: context.textSecondary),
                 filled: true,
-                fillColor: const Color(0xFFF5F7FA),
+                fillColor: context.subtleBg,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -168,12 +171,12 @@ class _LogbookScreenState extends State<LogbookScreen> {
                       decoration: BoxDecoration(
                         color: isSelected
                             ? const Color(0xFF1A5276)
-                            : Colors.white,
+                            : context.cardColor,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color: isSelected
                               ? const Color(0xFF1A5276)
-                              : const Color(0xFFE0E0E0),
+                              : context.borderColor,
                         ),
                       ),
                       child: Text(
@@ -183,7 +186,7 @@ class _LogbookScreenState extends State<LogbookScreen> {
                           fontWeight: FontWeight.w500,
                           color: isSelected
                               ? Colors.white
-                              : const Color(0xFF1A1A2E),
+                              : context.textPrimary,
                         ),
                       ),
                     ),
@@ -193,7 +196,7 @@ class _LogbookScreenState extends State<LogbookScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          const Divider(height: 1, color: Color(0xFFE8ECF0)),
+          Divider(height: 1, color: context.borderColor),
           // Timeline entries
           Expanded(
             child: StreamBuilder<List<Entry>>(
@@ -208,10 +211,10 @@ class _LogbookScreenState extends State<LogbookScreen> {
                 final grouped = _groupByMonth(filtered);
 
                 if (grouped.isEmpty) {
-                  return const Center(
+                  return Center(
                     child: Text(
                       'Keine Einträge gefunden',
-                      style: TextStyle(fontSize: 15, color: Color(0xFF8E8E93)),
+                      style: TextStyle(fontSize: 15, color: context.textSecondary),
                     ),
                   );
                 }
@@ -244,7 +247,7 @@ class _LogbookScreenState extends State<LogbookScreen> {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
-              color: const Color(0xFF1A5276).withValues(alpha: 0.7),
+              color: context.sectionHeader,
               letterSpacing: 0.5,
             ),
           ),
@@ -275,9 +278,9 @@ class _LogbookScreenState extends State<LogbookScreen> {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.cardColor,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFE8ECF0)),
+              border: Border.all(color: context.borderColor),
             ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -290,24 +293,24 @@ class _LogbookScreenState extends State<LogbookScreen> {
                   children: [
                     Text(
                       entry.description,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF1A1A2E),
+                        color: context.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 3),
                     if (entry.subtitle != null)
                       Text(
                         entry.subtitle!,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
-                          color: Color(0xFF8E8E93),
+                          color: context.textSecondary,
                         ),
                       ),
                     const SizedBox(height: 4),
                     Text(
-                      '${entry.cost.toStringAsFixed(2).replaceAll('.', ',')} €',
+                      _settings.formatCost(entry.cost),
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
@@ -322,19 +325,19 @@ class _LogbookScreenState extends State<LogbookScreen> {
                 children: [
                   Text(
                     _formatDateShort(entry.date),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: Color(0xFF8E8E93),
+                      color: context.textSecondary,
                     ),
                   ),
                   if (entry.mileage != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
-                        '${_formatNumber(entry.mileage!)} km',
-                        style: const TextStyle(
+                        _settings.formatDistance(entry.mileage!),
+                        style: TextStyle(
                           fontSize: 12,
-                          color: Color(0xFF8E8E93),
+                          color: context.textSecondary,
                         ),
                       ),
                     ),
@@ -342,10 +345,10 @@ class _LogbookScreenState extends State<LogbookScreen> {
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
-                        '${entry.liters!.toStringAsFixed(1).replaceAll('.', ',')} L • ${entry.pricePerLiter?.toStringAsFixed(3).replaceAll('.', ',')} €/L',
-                        style: const TextStyle(
+                        '${entry.liters!.toStringAsFixed(1).replaceAll('.', ',')} ${_settings.volumeUnit} • ${entry.pricePerLiter?.toStringAsFixed(3).replaceAll('.', ',')} ${_settings.pricePerVolumeUnit}',
+                        style: TextStyle(
                           fontSize: 12,
-                          color: Color(0xFF8E8E93),
+                          color: context.textSecondary,
                         ),
                       ),
                     ),
@@ -432,13 +435,4 @@ class _LogbookScreenState extends State<LogbookScreen> {
     return '${months[date.month - 1]} ${date.year}';
   }
 
-  String _formatNumber(int number) {
-    final str = number.toString();
-    final buffer = StringBuffer();
-    for (var i = 0; i < str.length; i++) {
-      if (i > 0 && (str.length - i) % 3 == 0) buffer.write('.');
-      buffer.write(str[i]);
-    }
-    return buffer.toString();
-  }
 }

@@ -1,9 +1,14 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../models/vehicle.dart';
 import '../services/auth_service.dart';
+import '../services/settings_service.dart';
+import '../services/vehicle_service.dart';
+import '../theme.dart';
+import 'add_vehicle_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   final List<Vehicle> vehicles;
   final Vehicle selectedVehicle;
 
@@ -14,19 +19,41 @@ class ProfileScreen extends StatelessWidget {
   });
 
   @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  final _settings = SettingsService();
+
+  @override
+  void initState() {
+    super.initState();
+    _settings.addListener(_rebuild);
+  }
+
+  @override
+  void dispose() {
+    _settings.removeListener(_rebuild);
+    super.dispose();
+  }
+
+  void _rebuild() => setState(() {});
+
+  @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
     final authService = AuthService();
+    final vehicleService = VehicleService();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FB),
+      backgroundColor: context.bgColor,
       appBar: AppBar(
         title: const Text(
           'Einstellungen',
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
         ),
         centerTitle: false,
-        backgroundColor: const Color(0xFFF8F9FB),
+        backgroundColor: context.bgColor,
         elevation: 0,
         scrolledUnderElevation: 0,
       ),
@@ -57,18 +84,18 @@ class ProfileScreen extends StatelessWidget {
                       children: [
                         Text(
                           user?.displayName ?? 'Benutzer',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF1A1A2E),
+                            color: context.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           user?.email ?? '',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
-                            color: Color(0xFF8E8E93),
+                            color: context.textSecondary,
                           ),
                         ),
                       ],
@@ -107,9 +134,9 @@ class ProfileScreen extends StatelessWidget {
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.cardColor,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFE8ECF0)),
+                border: Border.all(color: context.borderColor),
               ),
               child: Column(
                 children: [
@@ -117,87 +144,82 @@ class ProfileScreen extends StatelessWidget {
                     icon: Icons.palette_outlined,
                     title: 'Design',
                     subtitle: 'Hell, Dunkel oder System',
-                    trailing: 'System',
-                    onTap: () {
-                      // TODO: Design picker
-                    },
+                    trailing: _settings.themeLabel,
+                    onTap: () => _showThemePicker(context),
                   ),
                   const Divider(height: 1, indent: 56),
                   _buildSettingsTile(
                     icon: Icons.straighten,
                     title: 'Einheiten',
                     subtitle: null,
-                    trailing: 'Metrisch (km)',
-                    onTap: () {
-                      // TODO: Units picker
-                    },
+                    trailing: _settings.unitLabel,
+                    onTap: () => _showUnitPicker(context),
                   ),
                   const Divider(height: 1, indent: 56),
                   _buildSettingsTile(
                     icon: Icons.account_balance_wallet_outlined,
                     title: 'Währung',
                     subtitle: null,
-                    trailing: 'Euro (€)',
-                    onTap: () {
-                      // TODO: Currency picker
-                    },
+                    trailing: _settings.currencyLabel,
+                    onTap: () => _showCurrencyPicker(context),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 28),
             // Fahrzeug-Einstellungen
-            _buildSectionHeader('FAHRZEUG-EINSTELLUNGEN'),
+            _buildSectionHeader('FAHRZEUGE'),
             const SizedBox(height: 8),
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.cardColor,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFE8ECF0)),
+                border: Border.all(color: context.borderColor),
               ),
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF5F7FA),
-                        borderRadius: BorderRadius.circular(10),
+              child: Column(
+                children: [
+                  ...widget.vehicles.asMap().entries.map((e) {
+                    final index = e.key;
+                    final vehicle = e.value;
+                    return Column(
+                      children: [
+                        if (index > 0)
+                          const Divider(height: 1, indent: 56),
+                        _buildVehicleTile(
+                            context, vehicle, vehicleService),
+                      ],
+                    );
+                  }),
+                  const Divider(height: 1, indent: 56),
+                  // Add vehicle button
+                  InkWell(
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const AddVehicleScreen()),
+                    ),
+                    child: const Padding(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      child: Row(
+                        children: [
+                          Icon(Icons.add_circle_outline,
+                              color: Color(0xFF1A5276), size: 22),
+                          SizedBox(width: 14),
+                          Text(
+                            'Fahrzeug hinzufügen',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF1A5276),
+                            ),
+                          ),
+                        ],
                       ),
-                      child: const Icon(Icons.directions_car,
-                          color: Color(0xFF1A5276), size: 22),
                     ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Text(
-                        '${selectedVehicle.brand} ${selectedVehicle.model}',
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF1A1A2E),
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () {
-                        // TODO: Edit vehicle
-                      },
-                      icon: const Icon(Icons.edit_outlined,
-                          color: Color(0xFF8E8E93), size: 22),
-                    ),
-                    IconButton(
-                      onPressed: () {
-                        // TODO: Delete vehicle
-                      },
-                      icon: const Icon(Icons.delete_outline,
-                          color: Color(0xFF8E8E93), size: 22),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 28),
@@ -218,7 +240,8 @@ class ProfileScreen extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: InkWell(
-                onTap: () => _showDeleteAccountDialog(context, authService),
+                onTap: () => _showDeleteAccountDialog(
+                    context, authService, vehicleService),
                 borderRadius: BorderRadius.circular(14),
                 child: Container(
                   padding:
@@ -255,16 +278,192 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildVehicleTile(
+      BuildContext context, Vehicle vehicle, VehicleService vehicleService) {
+    final isSelected = vehicle.id == widget.selectedVehicle.id;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w700,
-          color: const Color(0xFF1A5276).withValues(alpha: 0.7),
-          letterSpacing: 0.5,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? context.brand.withValues(alpha: 0.1)
+                  : context.subtleBg,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(Icons.directions_car,
+                color: isSelected
+                    ? context.brand
+                    : context.textSecondary,
+                size: 22),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${vehicle.brand} ${vehicle.model}',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: context.textPrimary,
+                  ),
+                ),
+                Text(
+                  '${vehicle.licensePlate} • ${vehicle.year}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: context.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => AddVehicleScreen(vehicle: vehicle),
+              ),
+            ),
+            icon: Icon(Icons.edit_outlined,
+                color: context.textSecondary, size: 22),
+          ),
+          IconButton(
+            onPressed: () =>
+                _showDeleteVehicleDialog(context, vehicle, vehicleService),
+            icon: Icon(Icons.delete_outline,
+                color: context.textSecondary, size: 22),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showThemePicker(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: context.cardColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Design',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            _buildOption('System', _settings.themeMode == ThemeMode.system,
+                () => _settings.setThemeMode(ThemeMode.system), context),
+            _buildOption('Hell', _settings.themeMode == ThemeMode.light,
+                () => _settings.setThemeMode(ThemeMode.light), context),
+            _buildOption('Dunkel', _settings.themeMode == ThemeMode.dark,
+                () => _settings.setThemeMode(ThemeMode.dark), context),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showUnitPicker(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: context.cardColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Einheiten',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            _buildOption('Metrisch (km)', _settings.unit == 'km',
+                () => _settings.setUnit('km'), context),
+            _buildOption('Imperial (mi)', _settings.unit == 'mi',
+                () => _settings.setUnit('mi'), context),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showCurrencyPicker(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: context.cardColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Währung',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            _buildOption('Euro (€)', _settings.currency == '€',
+                () => _settings.setCurrency('€'), context),
+            _buildOption('Dollar (\$)', _settings.currency == '\$',
+                () => _settings.setCurrency('\$'), context),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOption(
+      String label, bool selected, VoidCallback onTap, BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: InkWell(
+        onTap: () {
+          onTap();
+          Navigator.pop(context);
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: selected
+                ? context.brand.withValues(alpha: 0.08)
+                : context.subtleBg,
+            borderRadius: BorderRadius.circular(12),
+            border: selected
+                ? Border.all(color: context.brand)
+                : null,
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+                    color: selected
+                        ? context.brand
+                        : context.textPrimary,
+                  ),
+                ),
+              ),
+              if (selected)
+                Icon(Icons.check, color: context.brand, size: 20),
+            ],
+          ),
         ),
       ),
     );
@@ -287,10 +486,10 @@ class ProfileScreen extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: const Color(0xFFF5F7FA),
+                color: context.subtleBg,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, color: const Color(0xFF1A5276), size: 22),
+              child: Icon(icon, color: context.brand, size: 22),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -299,18 +498,18 @@ class ProfileScreen extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
-                      color: Color(0xFF1A1A2E),
+                      color: context.textPrimary,
                     ),
                   ),
                   if (subtitle != null)
                     Text(
                       subtitle,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: Color(0xFF8E8E93),
+                        color: context.textSecondary,
                       ),
                     ),
                 ],
@@ -330,8 +529,51 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  void _showDeleteAccountDialog(
-      BuildContext context, AuthService authService) {
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+          color: context.sectionHeader,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteVehicleDialog(
+      BuildContext context, Vehicle vehicle, VehicleService vehicleService) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Fahrzeug löschen'),
+        content: Text(
+          '„${vehicle.brand} ${vehicle.model}" und alle zugehörigen Einträge unwiderruflich löschen?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Abbrechen'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              vehicleService.deleteVehicle(vehicle.id);
+            },
+            style:
+                TextButton.styleFrom(foregroundColor: const Color(0xFFC62828)),
+            child: const Text('Löschen'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteAccountDialog(BuildContext context, AuthService authService,
+      VehicleService vehicleService) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -345,11 +587,31 @@ class ProfileScreen extends StatelessWidget {
             child: const Text('Abbrechen'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              // TODO: Delete account + all data
+              try {
+                // Delete all vehicles (and their subcollections)
+                for (final vehicle in widget.vehicles) {
+                  await vehicleService.deleteVehicle(vehicle.id);
+                }
+                // Delete user document
+                final uid = FirebaseAuth.instance.currentUser!.uid;
+                await FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(uid)
+                    .delete();
+                // Delete auth account
+                await authService.deleteAccount();
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Fehler: $e')),
+                  );
+                }
+              }
             },
-            style: TextButton.styleFrom(foregroundColor: const Color(0xFFC62828)),
+            style:
+                TextButton.styleFrom(foregroundColor: const Color(0xFFC62828)),
             child: const Text('Löschen'),
           ),
         ],
