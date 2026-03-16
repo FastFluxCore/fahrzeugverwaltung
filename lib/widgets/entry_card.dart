@@ -43,12 +43,31 @@ class EntryCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 3),
-                  Text(
-                    _formatSubtitle(),
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: context.textSecondary,
-                    ),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          _formatSubtitle(),
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: context.textSecondary,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (entry.documentUrls.isNotEmpty) ...[
+                        const SizedBox(width: 6),
+                        Icon(Icons.attach_file,
+                            size: 14, color: context.textSecondary),
+                        Text(
+                          '${entry.documentUrls.length}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: context.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ],
               ),

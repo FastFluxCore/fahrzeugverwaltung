@@ -50,6 +50,7 @@ class _MyAppState extends State<MyApp> {
       themeMode: _settings.themeMode,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
+      builder: (context, child) => ClipRect(child: child!),
       home: StreamBuilder<User?>(
         stream: AuthService().authStateChanges,
         builder: (context, snapshot) {
