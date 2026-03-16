@@ -212,6 +212,7 @@ class _LogbookScreenState extends State<LogbookScreen> {
 
                 if (grouped.isEmpty) {
                   return Center(
+                  return const Center(
                     child: Text(
                       'Keine Einträge gefunden',
                       style: TextStyle(fontSize: 15, color: context.textSecondary),
@@ -281,6 +282,9 @@ class _LogbookScreenState extends State<LogbookScreen> {
               color: context.cardColor,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: context.borderColor),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFE8ECF0)),
             ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -360,6 +364,33 @@ class _LogbookScreenState extends State<LogbookScreen> {
         ),
       ),
     );
+  }
+
+  Future<bool> _confirmDismiss(Entry entry) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Eintrag löschen'),
+        content: Text('„${entry.description}" wirklich löschen?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Abbrechen'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFFC62828)),
+            child: const Text('Löschen'),
+          ),
+        ],
+      ),
+    );
+    if (result == true) {
+      await _deleteEntry(entry);
+      return true;
+    }
+    return false;
   }
 
   Future<bool> _confirmDismiss(Entry entry) async {

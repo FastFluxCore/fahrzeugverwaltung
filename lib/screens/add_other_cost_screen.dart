@@ -4,6 +4,7 @@ import '../services/entry_service.dart';
 import '../services/settings_service.dart';
 import '../services/storage_service.dart';
 import '../theme.dart';
+import '../services/storage_service.dart';
 import '../widgets/document_picker.dart';
 
 class AddOtherCostScreen extends StatefulWidget {
@@ -167,6 +168,7 @@ class _AddOtherCostScreenState extends State<AddOtherCostScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.bgColor,
+      backgroundColor: const Color(0xFFF8F9FB),
       appBar: AppBar(
         title: Text(
           _isEditing ? 'Kosten bearbeiten' : 'Sonstige Kosten',
@@ -174,6 +176,7 @@ class _AddOtherCostScreenState extends State<AddOtherCostScreen> {
         ),
         centerTitle: true,
         backgroundColor: context.bgColor,
+        backgroundColor: const Color(0xFFF8F9FB),
         elevation: 0,
         scrolledUnderElevation: 0,
         actions: [
@@ -196,6 +199,7 @@ class _AddOtherCostScreenState extends State<AddOtherCostScreen> {
                 borderRadius: BorderRadius.circular(12),
                 child: InputDecorator(
                   decoration: _inputDecoration('Datum', context: context),
+                  decoration: _inputDecoration('Datum'),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -205,6 +209,8 @@ class _AddOtherCostScreenState extends State<AddOtherCostScreen> {
                       ),
                       Icon(Icons.calendar_today,
                           size: 20, color: context.textSecondary),
+                      const Icon(Icons.calendar_today,
+                          size: 20, color: Color(0xFF8E8E93)),
                     ],
                   ),
                 ),
@@ -223,6 +229,13 @@ class _AddOtherCostScreenState extends State<AddOtherCostScreen> {
                   _descriptionController, 'Beschreibung', 'z.B. KFZ-Steuer 2026'),
               const SizedBox(height: 12),
               _buildField(context, _costController, 'Kosten (${_settings.currency})', 'z.B. 120.00',
+                decoration: _inputDecoration('Kategorie'),
+              ),
+              const SizedBox(height: 12),
+              _buildField(
+                  _descriptionController, 'Beschreibung', 'z.B. KFZ-Steuer 2026'),
+              const SizedBox(height: 12),
+              _buildField(_costController, 'Kosten (€)', 'z.B. 120.00',
                   keyboardType: TextInputType.number),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
@@ -235,6 +248,10 @@ class _AddOtherCostScreenState extends State<AddOtherCostScreen> {
               ),
               const SizedBox(height: 12),
               _buildField(context,
+                decoration: _inputDecoration('Intervall'),
+              ),
+              const SizedBox(height: 12),
+              _buildField(
                   _notesController, 'Notizen (optional)', 'Weitere Details...',
                   required: false, maxLines: 3),
               const SizedBox(height: 12),
@@ -273,6 +290,11 @@ class _AddOtherCostScreenState extends State<AddOtherCostScreen> {
   }
 
   InputDecoration _inputDecoration(String label, {String? hint, required BuildContext context}) {
+      decoration: _inputDecoration(label, hint: hint),
+    );
+  }
+
+  InputDecoration _inputDecoration(String label, {String? hint}) {
     return InputDecoration(
       labelText: label,
       hintText: hint,
@@ -285,6 +307,14 @@ class _AddOtherCostScreenState extends State<AddOtherCostScreen> {
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(color: context.borderColor),
+      fillColor: Colors.white,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFFE8ECF0)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFFE8ECF0)),
       ),
     );
   }

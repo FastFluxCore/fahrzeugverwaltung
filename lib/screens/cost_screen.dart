@@ -113,11 +113,13 @@ class _CostScreenState extends State<CostScreen> {
                               color: isSelected
                                   ? const Color(0xFF1A5276)
                                   : context.cardColor,
+                                  : Colors.white,
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
                                 color: isSelected
                                     ? const Color(0xFF1A5276)
                                     : context.borderColor,
+                                    : const Color(0xFFE0E0E0),
                               ),
                             ),
                             child: Text(
@@ -128,6 +130,7 @@ class _CostScreenState extends State<CostScreen> {
                                 color: isSelected
                                     ? Colors.white
                                     : context.textPrimary,
+                                    : const Color(0xFF1A1A2E),
                               ),
                             ),
                           ),
@@ -222,6 +225,7 @@ class _CostScreenState extends State<CostScreen> {
 
   String _formatCurrency(double value) {
     return _settings.formatCost(value);
+    return '${value.toStringAsFixed(2).replaceAll('.', ',')} €';
   }
 
   Widget _buildKpiCard({
@@ -253,6 +257,10 @@ class _CostScreenState extends State<CostScreen> {
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
                 color: context.textPrimary,
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1A1A2E),
               ),
             ),
           ),
@@ -304,6 +312,11 @@ class _CostScreenState extends State<CostScreen> {
                 padding: const EdgeInsets.all(20),
                 child: Text('Keine Daten vorhanden',
                     style: TextStyle(color: context.textSecondary)),
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Text('Keine Daten vorhanden',
+                    style: TextStyle(color: Color(0xFF8E8E93))),
               ),
             )
           else
@@ -345,6 +358,7 @@ class _CostScreenState extends State<CostScreen> {
                         ),
                       ),
                       Column(
+                      const Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
@@ -353,6 +367,7 @@ class _CostScreenState extends State<CostScreen> {
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color: context.textPrimary,
+                              color: Color(0xFF1A1A2E),
                             ),
                           ),
                           Text(
@@ -360,6 +375,7 @@ class _CostScreenState extends State<CostScreen> {
                             style: TextStyle(
                               fontSize: 10,
                               color: context.textSecondary,
+                              color: Color(0xFF8E8E93),
                               letterSpacing: 0.5,
                             ),
                           ),
@@ -472,6 +488,7 @@ class _CostScreenState extends State<CostScreen> {
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
                       return BarTooltipItem(
                         '${rod.toY.toStringAsFixed(2).replaceAll('.', ',')} ${_settings.currency}',
+                        '${rod.toY.toStringAsFixed(2).replaceAll('.', ',')} €',
                         const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,
@@ -499,6 +516,7 @@ class _CostScreenState extends State<CostScreen> {
                                 color: isLast
                                     ? const Color(0xFF1A5276)
                                     : context.textSecondary,
+                                    : const Color(0xFF8E8E93),
                                 fontWeight: isLast
                                     ? FontWeight.w700
                                     : FontWeight.normal,

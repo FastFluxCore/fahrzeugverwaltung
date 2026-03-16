@@ -99,6 +99,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.bgColor,
+      backgroundColor: const Color(0xFFF8F9FB),
       appBar: AppBar(
         title: Text(
           _isEditing ? 'Fahrzeug bearbeiten' : 'Fahrzeug hinzufügen',
@@ -106,6 +107,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
         ),
         centerTitle: true,
         backgroundColor: context.bgColor,
+        backgroundColor: const Color(0xFFF8F9FB),
         elevation: 0,
         scrolledUnderElevation: 0,
       ),
@@ -216,6 +218,20 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
       keyboardType: keyboardType,
       validator: (v) => (v == null || v.trim().isEmpty) ? 'Pflichtfeld' : null,
       decoration: _inputDecoration(context, label, hint: hint),
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFE8ECF0)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFE8ECF0)),
+        ),
+      ),
     );
   }
 
@@ -232,6 +248,19 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
           .toList(),
       onChanged: onChanged,
       decoration: _inputDecoration(context, label),
+      decoration: InputDecoration(
+        labelText: label,
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFE8ECF0)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFE8ECF0)),
+        ),
+      ),
     );
   }
 }

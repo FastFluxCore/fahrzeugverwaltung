@@ -108,17 +108,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       SummaryCard(
                         icon: Icons.speed,
                         value: _settings.formatDistance(widget.selectedVehicle.mileage),
+                        value: '${_formatNumber(widget.selectedVehicle.mileage)} km',
                         label: 'Kilometerstand',
                       ),
                       SummaryCard(
                         icon: Icons.account_balance_wallet,
                         value: _settings.formatCost(monthCosts),
+                        value: '${monthCosts.toStringAsFixed(2).replaceAll('.', ',')} €',
                         label: 'Kosten / Monat',
                       ),
                       SummaryCard(
                         icon: Icons.local_gas_station,
                         value: avgConsumption,
                         label: 'Ø Verbr. / ${_settings.consumptionUnit}',
+                      ),
+                      SummaryCard(
+                        icon: Icons.format_list_numbered,
+                        value: '$totalEntries',
+                        label: 'Einträge gesamt',
+                      ),
+                        label: 'Ø Verbr. / 100km',
                       ),
                       SummaryCard(
                         icon: Icons.format_list_numbered,
@@ -137,6 +146,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: context.sectionHeader,
+                      color: const Color(0xFF1A5276).withValues(alpha: 0.7),
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -157,6 +167,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               'Noch keine Einträge vorhanden',
                               style: TextStyle(
                                   fontSize: 15, color: context.textSecondary),
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: const Color(0xFFE8ECF0)),
+                          ),
+                          child: const Center(
+                            child: Text(
+                              'Noch keine Einträge vorhanden',
+                              style: TextStyle(
+                                  fontSize: 15, color: Color(0xFF8E8E93)),
                             ),
                           ),
                         )

@@ -116,5 +116,20 @@ class EntryService {
     };
 
     return controller.stream;
+  // All entries combined
+  Stream<List<Entry>> getAllEntries(String vehicleId) {
+    final fuelStream = getFuelLogs(vehicleId);
+    final serviceStream = getServices(vehicleId);
+    final otherCostStream = getOtherCosts(vehicleId);
+
+    return fuelStream.asyncExpand((fuelLogs) {
+      return serviceStream.asyncExpand((services) {
+        return otherCostStream.map((otherCosts) {
+          final all = [...fuelLogs, ...services, ...otherCosts];
+          all.sort((a, b) => b.date.compareTo(a.date));
+          return all;
+        });
+      });
+    });
   }
 }
