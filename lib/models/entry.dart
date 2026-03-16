@@ -24,6 +24,9 @@ class Entry {
   final String? category;
   final String? interval;
 
+  // Documents
+  final List<String> documentUrls;
+
   Entry({
     required this.id,
     required this.type,
@@ -41,6 +44,7 @@ class Entry {
     this.notes,
     this.category,
     this.interval,
+    this.documentUrls = const [],
   });
 
   factory Entry.fromFuelLog(String id, Map<String, dynamic> map) {
@@ -56,6 +60,7 @@ class Entry {
       pricePerLiter: (map['pricePerLiter'] ?? 0).toDouble(),
       fullTank: map['fullTank'],
       station: map['station'],
+      documentUrls: List<String>.from(map['documentUrls'] ?? []),
     );
   }
 
@@ -71,6 +76,7 @@ class Entry {
       serviceType: map['serviceType'],
       workshop: map['workshop'],
       notes: map['notes'],
+      documentUrls: List<String>.from(map['documentUrls'] ?? []),
     );
   }
 
@@ -85,6 +91,7 @@ class Entry {
       category: map['category'],
       interval: map['interval'],
       notes: map['notes'],
+      documentUrls: List<String>.from(map['documentUrls'] ?? []),
     );
   }
 
@@ -112,6 +119,7 @@ class Entry {
       map['interval'] = interval;
       map['notes'] = notes;
     }
+    if (documentUrls.isNotEmpty) map['documentUrls'] = documentUrls;
     return map;
   }
 }

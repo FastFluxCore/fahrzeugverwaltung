@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import '../models/entry.dart';
 import '../models/vehicle.dart';
+import '../services/entry_service.dart';
 import '../widgets/entry_card.dart';
 import '../widgets/summary_card.dart';
 import '../widgets/vehicle_selector.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   final List<Vehicle> vehicles;
   final Vehicle selectedVehicle;
   final ValueChanged<Vehicle?> onVehicleChanged;
@@ -17,53 +18,12 @@ class DashboardScreen extends StatelessWidget {
     required this.onVehicleChanged,
   });
 
-  // TODO: Replace with Firestore data
-  List<Entry> get _recentEntries => [
-        Entry(
-          id: '1',
-          type: EntryType.fuel,
-          date: DateTime(2023, 10, 13, 18, 45),
-          cost: 84.20,
-          description: 'Tanken',
-          subtitle: 'Gestern, 18:45 Uhr',
-          liters: 54.2,
-        ),
-        Entry(
-          id: '2',
-          type: EntryType.service,
-          date: DateTime(2023, 10, 12),
-          cost: 210.00,
-          description: 'Service',
-          subtitle: '12. Okt 2023',
-        ),
-        Entry(
-          id: '3',
-          type: EntryType.otherCost,
-          date: DateTime(2023, 10, 8),
-          cost: 2.00,
-          description: 'Parkgebühren',
-          subtitle: '08. Okt 2023',
-          category: 'Parkgebühren',
-        ),
-        Entry(
-          id: '4',
-          type: EntryType.otherCost,
-          date: DateTime(2023, 10, 8),
-          cost: 4.50,
-          description: 'Parkgebühren',
-          subtitle: '08. Okt 2023',
-          category: 'Parkgebühren',
-        ),
-        Entry(
-          id: '5',
-          type: EntryType.fuel,
-          date: DateTime(2023, 10, 1),
-          cost: 50.01,
-          description: 'Tanken',
-          subtitle: '01. Okt 2023',
-          liters: 31.6,
-        ),
-      ];
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  final _entryService = EntryService();
 
   @override
   Widget build(BuildContext context) {
@@ -79,70 +39,96 @@ class DashboardScreen extends StatelessWidget {
         elevation: 0,
         scrolledUnderElevation: 0,
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            VehicleSelector(
-              selectedVehicle: selectedVehicle,
-              vehicles: vehicles,
-              onChanged: onVehicleChanged,
-            ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'ZUSAMMENFASSUNG',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF1A5276).withValues(alpha: 0.7),
-                  letterSpacing: 0.5,
+      body: StreamBuilder<List<Entry>>(
+        stream: _entryService.getAllEntries(widget.selectedVehicle.id),
+        builder: (context, snapshot) {
+          final entries = snapshot.data ?? [];
+          final recentEntries = entries.take(5).toList();
+
+          // Compute KPIs
+          final now = DateTime.now();
+          final monthStart = DateTime(now.year, now.month);
+          final monthCosts = entries
+              .where((e) => e.date.isAfter(monthStart))
+              .fold<double>(0, (sum, e) => sum + e.cost);
+
+          // Average fuel consumption
+          final fuelEntries = entries
+              .where((e) => e.type == EntryType.fuel && e.liters != null && e.mileage != null)
+              .toList();
+          String avgConsumption = '–';
+          if (fuelEntries.length >= 2) {
+            final sorted = [...fuelEntries]..sort((a, b) => a.mileage!.compareTo(b.mileage!));
+            final totalLiters = sorted.skip(1).fold<double>(0, (sum, e) => sum + e.liters!);
+            final distKm = sorted.last.mileage! - sorted.first.mileage!;
+            if (distKm > 0) {
+              avgConsumption = '${(totalLiters / distKm * 100).toStringAsFixed(1).replaceAll('.', ',')} L';
+            }
+          }
+
+          // Total entries count
+          final totalEntries = entries.length;
+
+          return SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                VehicleSelector(
+                  selectedVehicle: widget.selectedVehicle,
+                  vehicles: widget.vehicles,
+                  onChanged: widget.onVehicleChanged,
                 ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: GridView.count(
-                crossAxisCount: 2,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 1.5,
-                children: [
-                  SummaryCard(
-                    icon: Icons.speed,
-                    value: '${_formatNumber(selectedVehicle.mileage)} km',
-                    label: 'Kilometerstand',
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    'ZUSAMMENFASSUNG',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF1A5276).withValues(alpha: 0.7),
+                      letterSpacing: 0.5,
+                    ),
                   ),
-                  const SummaryCard(
-                    icon: Icons.account_balance_wallet,
-                    value: '450,00 €',
-                    label: 'Kosten / Monat',
+                ),
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: GridView.count(
+                    crossAxisCount: 2,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    childAspectRatio: 1.5,
+                    children: [
+                      SummaryCard(
+                        icon: Icons.speed,
+                        value: '${_formatNumber(widget.selectedVehicle.mileage)} km',
+                        label: 'Kilometerstand',
+                      ),
+                      SummaryCard(
+                        icon: Icons.account_balance_wallet,
+                        value: '${monthCosts.toStringAsFixed(2).replaceAll('.', ',')} €',
+                        label: 'Kosten / Monat',
+                      ),
+                      SummaryCard(
+                        icon: Icons.local_gas_station,
+                        value: avgConsumption,
+                        label: 'Ø Verbr. / 100km',
+                      ),
+                      SummaryCard(
+                        icon: Icons.format_list_numbered,
+                        value: '$totalEntries',
+                        label: 'Einträge gesamt',
+                      ),
+                    ],
                   ),
-                  const SummaryCard(
-                    icon: Icons.local_gas_station,
-                    value: '8,4 L',
-                    label: 'Ø Verbr. / 100km',
-                  ),
-                  const SummaryCard(
-                    icon: Icons.build,
-                    value: '15 Tage',
-                    label: 'Service fällig',
-                    valueColor: Color(0xFFE67E22),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
+                ),
+                const SizedBox(height: 24),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
                     'LETZTE EINTRÄGE',
                     style: TextStyle(
                       fontSize: 13,
@@ -151,37 +137,40 @@ class DashboardScreen extends StatelessWidget {
                       letterSpacing: 0.5,
                     ),
                   ),
-                  GestureDetector(
-                    onTap: () {
-                      // TODO: Navigate to timeline
-                    },
-                    child: const Text(
-                      'Alle zeigen',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF1A5276),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: recentEntries.isEmpty
+                      ? Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: const Color(0xFFE8ECF0)),
+                          ),
+                          child: const Center(
+                            child: Text(
+                              'Noch keine Einträge vorhanden',
+                              style: TextStyle(
+                                  fontSize: 15, color: Color(0xFF8E8E93)),
+                            ),
+                          ),
+                        )
+                      : Column(
+                          children: recentEntries
+                              .map((entry) => Padding(
+                                    padding: const EdgeInsets.only(bottom: 10),
+                                    child: EntryCard(entry: entry),
+                                  ))
+                              .toList(),
+                        ),
+                ),
+                const SizedBox(height: 80),
+              ],
             ),
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                children: _recentEntries
-                    .map((entry) => Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: EntryCard(entry: entry),
-                        ))
-                    .toList(),
-              ),
-            ),
-            const SizedBox(height: 80),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

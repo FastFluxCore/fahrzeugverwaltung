@@ -113,7 +113,7 @@ class EntryCard extends StatelessWidget {
   String _formatSubtitle() {
     final date = '${entry.date.day.toString().padLeft(2, '0')}. '
         '${_monthName(entry.date.month)} ${entry.date.year}';
-    if (entry.subtitle != null) return '${entry.subtitle}';
+    if (entry.subtitle != null) return '${entry.subtitle} • $date';
     return date;
   }
 

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../models/vehicle.dart';
 import '../services/vehicle_service.dart';
+import 'add_fuel_screen.dart';
+import 'add_other_cost_screen.dart';
+import 'add_service_screen.dart';
 import 'add_vehicle_screen.dart';
 import 'cost_screen.dart';
 import 'dashboard_screen.dart';
@@ -71,7 +74,15 @@ class _AppShellState extends State<AppShell> {
               color: const Color(0xFF1A5276),
               onTap: () {
                 Navigator.pop(context);
-                // TODO: Open fuel form
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => AddFuelScreen(
+                      vehicleId: _selectedVehicle!.id,
+                      currentMileage: _selectedVehicle!.mileage,
+                    ),
+                  ),
+                );
               },
             ),
             const SizedBox(height: 12),
@@ -81,7 +92,15 @@ class _AppShellState extends State<AppShell> {
               color: const Color(0xFF2E7D32),
               onTap: () {
                 Navigator.pop(context);
-                // TODO: Open service form
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => AddServiceScreen(
+                      vehicleId: _selectedVehicle!.id,
+                      currentMileage: _selectedVehicle!.mileage,
+                    ),
+                  ),
+                );
               },
             ),
             const SizedBox(height: 12),
@@ -91,7 +110,14 @@ class _AppShellState extends State<AppShell> {
               color: const Color(0xFFC62828),
               onTap: () {
                 Navigator.pop(context);
-                // TODO: Open other cost form
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => AddOtherCostScreen(
+                      vehicleId: _selectedVehicle!.id,
+                    ),
+                  ),
+                );
               },
             ),
             const SizedBox(height: 16),
