@@ -2,6 +2,8 @@ import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../screens/document_viewer_screen.dart';
 import '../services/storage_service.dart';
 import '../theme.dart';
 
@@ -73,6 +75,32 @@ class DocumentPickerState extends State<DocumentPicker> {
       }
     });
     widget.onChanged(_documents);
+  }
+
+  bool _isImage(String name) {
+    final lower = name.toLowerCase();
+    return lower.endsWith('.jpg') ||
+        lower.endsWith('.jpeg') ||
+        lower.endsWith('.png') ||
+        lower.endsWith('.webp');
+  }
+
+  void _openDocument(BuildContext context, DocumentFile doc) {
+    if (doc.url == null) return; // not yet uploaded
+    if (_isImage(doc.name)) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => DocumentViewerScreen(
+            url: doc.url!,
+            fileName: doc.name,
+          ),
+        ),
+      );
+    } else {
+      // PDF or other — open in new browser tab
+      launchUrl(Uri.parse(doc.url!), mode: LaunchMode.externalApplication);
+    }
   }
 
   void _removeDocument(int index) {
@@ -178,56 +206,90 @@ class DocumentPickerState extends State<DocumentPicker> {
           ..._documents.asMap().entries.map((e) {
             final index = e.key;
             final doc = e.value;
-            final isImage = doc.name.toLowerCase().endsWith('.jpg') ||
-                doc.name.toLowerCase().endsWith('.jpeg') ||
-                doc.name.toLowerCase().endsWith('.png') ||
-                doc.name.toLowerCase().endsWith('.webp');
+            final isImage = _isImage(doc.name);
+            final canOpen = doc.url != null;
 
             return Padding(
               padding: const EdgeInsets.only(bottom: 6),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                decoration: BoxDecoration(
-                  color: context.subtleBg,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      isImage ? Icons.image_outlined : Icons.description_outlined,
-                      color: const Color(0xFF1A5276),
-                      size: 20,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        doc.name,
-                        style: const TextStyle(fontSize: 14),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    if (doc.url == null)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1A5276).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(4),
+              child: InkWell(
+                onTap: canOpen ? () => _openDocument(context, doc) : null,
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: context.subtleBg,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    children: [
+                      if (canOpen && isImage)
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(6),
+                          child: Image.network(
+                            doc.url!,
+                            width: 36,
+                            height: 36,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) => Icon(
+                              Icons.image_outlined,
+                              color: const Color(0xFF1A5276),
+                              size: 20,
+                            ),
+                          ),
+                        )
+                      else
+                        Icon(
+                          isImage
+                              ? Icons.image_outlined
+                              : Icons.description_outlined,
+                          color: const Color(0xFF1A5276),
+                          size: 20,
                         ),
-                        child: const Text(
-                          'Neu',
-                          style: TextStyle(
-                              fontSize: 11, color: Color(0xFF1A5276)),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              doc.name,
+                              style: const TextStyle(fontSize: 14),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (canOpen)
+                              Text(
+                                'Antippen zum Öffnen',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: context.textSecondary,
+                                ),
+                              ),
+                          ],
                         ),
                       ),
-                    const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: () => _removeDocument(index),
-                      child: Icon(Icons.close,
-                          size: 18, color: context.textSecondary),
-                    ),
-                  ],
+                      if (doc.url == null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color:
+                                const Color(0xFF1A5276).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            'Neu',
+                            style: TextStyle(
+                                fontSize: 11, color: Color(0xFF1A5276)),
+                          ),
+                        ),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () => _removeDocument(index),
+                        child: Icon(Icons.close,
+                            size: 18, color: context.textSecondary),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );

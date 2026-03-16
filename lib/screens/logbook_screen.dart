@@ -309,13 +309,29 @@ class _LogbookScreenState extends State<LogbookScreen> {
                         ),
                       ),
                     const SizedBox(height: 4),
-                    Text(
-                      _settings.formatCost(entry.cost),
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF1A5276),
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          _settings.formatCost(entry.cost),
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF1A5276),
+                          ),
+                        ),
+                        if (entry.documentUrls.isNotEmpty) ...[
+                          const SizedBox(width: 8),
+                          Icon(Icons.attach_file,
+                              size: 14, color: context.textSecondary),
+                          Text(
+                            '${entry.documentUrls.length}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: context.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ],
                 ),
