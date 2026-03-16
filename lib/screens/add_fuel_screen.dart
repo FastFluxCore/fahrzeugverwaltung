@@ -5,8 +5,6 @@ import '../services/settings_service.dart';
 import '../services/storage_service.dart';
 import '../services/vehicle_service.dart';
 import '../theme.dart';
-import '../services/storage_service.dart';
-import '../services/vehicle_service.dart';
 import '../widgets/document_picker.dart';
 
 class AddFuelScreen extends StatefulWidget {
@@ -235,7 +233,6 @@ class _AddFuelScreenState extends State<AddFuelScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.bgColor,
-      backgroundColor: const Color(0xFFF8F9FB),
       appBar: AppBar(
         title: Text(
           _isEditing ? 'Tankvorgang bearbeiten' : 'Tanken',
@@ -243,7 +240,6 @@ class _AddFuelScreenState extends State<AddFuelScreen> {
         ),
         centerTitle: true,
         backgroundColor: context.bgColor,
-        backgroundColor: const Color(0xFFF8F9FB),
         elevation: 0,
         scrolledUnderElevation: 0,
         actions: [
@@ -267,7 +263,6 @@ class _AddFuelScreenState extends State<AddFuelScreen> {
                 borderRadius: BorderRadius.circular(12),
                 child: InputDecorator(
                   decoration: _inputDecoration(context, 'Datum'),
-                  decoration: _inputDecoration('Datum'),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -277,8 +272,6 @@ class _AddFuelScreenState extends State<AddFuelScreen> {
                       ),
                       Icon(Icons.calendar_today,
                           size: 20, color: context.textSecondary),
-                      const Icon(Icons.calendar_today,
-                          size: 20, color: Color(0xFF8E8E93)),
                     ],
                   ),
                 ),
@@ -286,8 +279,6 @@ class _AddFuelScreenState extends State<AddFuelScreen> {
               const SizedBox(height: 12),
               _buildField(context,
                   _totalCostController, 'Gesamtkosten (${_settings.currency})', 'z.B. 75,40',
-              _buildField(
-                  _totalCostController, 'Gesamtkosten (€)', 'z.B. 75,40',
                   keyboardType: TextInputType.number),
               const SizedBox(height: 12),
               Row(
@@ -295,16 +286,12 @@ class _AddFuelScreenState extends State<AddFuelScreen> {
                   Expanded(
                     child: _buildField(context,
                         _litersController, '${_settings.volumeUnit} (optional)', 'z.B. 45,5',
-                    child: _buildField(
-                        _litersController, 'Liter (optional)', 'z.B. 45,5',
                         keyboardType: TextInputType.number, required: false),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: _buildField(context,
                         _pricePerLiterController, '${_settings.currency}/${_settings.volumeUnit} (optional)', 'z.B. 1,659',
-                    child: _buildField(
-                        _pricePerLiterController, '€/Liter (optional)', 'z.B. 1,659',
                         keyboardType: TextInputType.number, required: false),
                   ),
                 ],
@@ -342,11 +329,6 @@ class _AddFuelScreenState extends State<AddFuelScreen> {
                   keyboardType: TextInputType.number, required: false),
               const SizedBox(height: 12),
               _buildField(context, _stationController, 'Tankstelle (optional)',
-              _buildField(
-                  _mileageController, 'Kilometerstand (optional)', 'z.B. 12500',
-                  keyboardType: TextInputType.number, required: false),
-              const SizedBox(height: 12),
-              _buildField(_stationController, 'Tankstelle (optional)',
                   'z.B. Aral, Shell',
                   required: false),
               const SizedBox(height: 12),
@@ -364,9 +346,6 @@ class _AddFuelScreenState extends State<AddFuelScreen> {
                   color: context.cardColor,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: context.borderColor),
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFE8ECF0)),
                 ),
                 child: SwitchListTile(
                   title: const Text('Vollgetankt',
@@ -405,11 +384,6 @@ class _AddFuelScreenState extends State<AddFuelScreen> {
   }
 
   InputDecoration _inputDecoration(BuildContext context, String label, {String? hint}) {
-      decoration: _inputDecoration(label, hint: hint),
-    );
-  }
-
-  InputDecoration _inputDecoration(String label, {String? hint}) {
     return InputDecoration(
       labelText: label,
       hintText: hint,
@@ -422,14 +396,6 @@ class _AddFuelScreenState extends State<AddFuelScreen> {
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(color: context.borderColor),
-      fillColor: Colors.white,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFE8ECF0)),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFE8ECF0)),
       ),
     );
   }

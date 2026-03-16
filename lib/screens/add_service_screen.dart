@@ -5,8 +5,6 @@ import '../services/settings_service.dart';
 import '../services/storage_service.dart';
 import '../services/vehicle_service.dart';
 import '../theme.dart';
-import '../services/storage_service.dart';
-import '../services/vehicle_service.dart';
 import '../widgets/document_picker.dart';
 
 class AddServiceScreen extends StatefulWidget {
@@ -175,7 +173,6 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.bgColor,
-      backgroundColor: const Color(0xFFF8F9FB),
       appBar: AppBar(
         title: Text(
           _isEditing ? 'Service bearbeiten' : 'Service',
@@ -183,7 +180,6 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
         ),
         centerTitle: true,
         backgroundColor: context.bgColor,
-        backgroundColor: const Color(0xFFF8F9FB),
         elevation: 0,
         scrolledUnderElevation: 0,
         actions: [
@@ -206,7 +202,6 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
                 borderRadius: BorderRadius.circular(12),
                 child: InputDecorator(
                   decoration: _inputDecoration(context, 'Datum'),
-                  decoration: _inputDecoration('Datum'),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -216,8 +211,6 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
                       ),
                       Icon(Icons.calendar_today,
                           size: 20, color: context.textSecondary),
-                      const Icon(Icons.calendar_today,
-                          size: 20, color: Color(0xFF8E8E93)),
                     ],
                   ),
                 ),
@@ -243,20 +236,6 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
                   required: false),
               const SizedBox(height: 12),
               _buildField(context,
-                decoration: _inputDecoration('Art des Service'),
-              ),
-              const SizedBox(height: 12),
-              _buildField(_costController, 'Kosten (€)', 'z.B. 250.00',
-                  keyboardType: TextInputType.number),
-              const SizedBox(height: 12),
-              _buildField(_mileageController, 'Kilometerstand', 'z.B. 12500',
-                  keyboardType: TextInputType.number),
-              const SizedBox(height: 12),
-              _buildField(
-                  _workshopController, 'Werkstatt (optional)', 'z.B. ATU',
-                  required: false),
-              const SizedBox(height: 12),
-              _buildField(
                   _notesController, 'Notizen (optional)', 'Weitere Details...',
                   required: false, maxLines: 3),
               const SizedBox(height: 12),
@@ -295,11 +274,6 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
   }
 
   InputDecoration _inputDecoration(BuildContext context, String label, {String? hint}) {
-      decoration: _inputDecoration(label, hint: hint),
-    );
-  }
-
-  InputDecoration _inputDecoration(String label, {String? hint}) {
     return InputDecoration(
       labelText: label,
       hintText: hint,
@@ -312,14 +286,6 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(color: context.borderColor),
-      fillColor: Colors.white,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFE8ECF0)),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFE8ECF0)),
       ),
     );
   }
