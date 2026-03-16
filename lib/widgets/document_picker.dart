@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../services/storage_service.dart';
+import '../theme.dart';
 
 class DocumentFile {
   final String name;
@@ -128,6 +129,9 @@ class DocumentPickerState extends State<DocumentPicker> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
+              color: context.cardColor,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: context.borderColor),
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: const Color(0xFFE8ECF0)),
@@ -145,6 +149,7 @@ class DocumentPickerState extends State<DocumentPicker> {
                       color: Color(0xFF1A5276), size: 22),
                 ),
                 const SizedBox(width: 14),
+                Expanded(
                 const Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -154,6 +159,7 @@ class DocumentPickerState extends State<DocumentPicker> {
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w500,
+                          color: context.textPrimary,
                           color: Color(0xFF1A1A2E),
                         ),
                       ),
@@ -161,6 +167,7 @@ class DocumentPickerState extends State<DocumentPicker> {
                         'PDF, JPG, PNG',
                         style: TextStyle(
                           fontSize: 12,
+                          color: context.textSecondary,
                           color: Color(0xFF8E8E93),
                         ),
                       ),
@@ -188,6 +195,7 @@ class DocumentPickerState extends State<DocumentPicker> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
+                  color: context.subtleBg,
                   color: const Color(0xFFF5F7FA),
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -223,6 +231,8 @@ class DocumentPickerState extends State<DocumentPicker> {
                     const SizedBox(width: 8),
                     GestureDetector(
                       onTap: () => _removeDocument(index),
+                      child: Icon(Icons.close,
+                          size: 18, color: context.textSecondary),
                       child: const Icon(Icons.close,
                           size: 18, color: Color(0xFF8E8E93)),
                     ),

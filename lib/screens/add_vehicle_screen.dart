@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/vehicle.dart';
 import '../services/vehicle_service.dart';
+import '../theme.dart';
 
 class AddVehicleScreen extends StatefulWidget {
   final Vehicle? vehicle; // null = add, non-null = edit
@@ -97,6 +98,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: context.bgColor,
       backgroundColor: const Color(0xFFF8F9FB),
       appBar: AppBar(
         title: Text(
@@ -104,6 +106,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
         ),
         centerTitle: true,
+        backgroundColor: context.bgColor,
         backgroundColor: const Color(0xFFF8F9FB),
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -187,6 +190,23 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
     );
   }
 
+  InputDecoration _inputDecoration(BuildContext context, String label, {String? hint}) {
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      filled: true,
+      fillColor: context.inputFill,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: context.borderColor),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: context.borderColor),
+      ),
+    );
+  }
+
   Widget _buildTextField(
     TextEditingController controller,
     String label,
@@ -197,6 +217,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
       controller: controller,
       keyboardType: keyboardType,
       validator: (v) => (v == null || v.trim().isEmpty) ? 'Pflichtfeld' : null,
+      decoration: _inputDecoration(context, label, hint: hint),
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
@@ -226,6 +247,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
           .map((item) => DropdownMenuItem(value: item, child: Text(item)))
           .toList(),
       onChanged: onChanged,
+      decoration: _inputDecoration(context, label),
       decoration: InputDecoration(
         labelText: label,
         filled: true,

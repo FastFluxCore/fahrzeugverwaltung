@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/vehicle.dart';
+import '../theme.dart';
 
 class VehicleSelector extends StatelessWidget {
   final Vehicle? selectedVehicle;
@@ -19,27 +20,29 @@ class VehicleSelector extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F7FA),
+        color: context.subtleBg,
         borderRadius: BorderRadius.circular(12),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<Vehicle>(
           value: selectedVehicle,
           isExpanded: true,
-          icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF1A5276)),
+          dropdownColor: context.cardColor,
+          icon: Icon(Icons.keyboard_arrow_down, color: context.brand),
           items: vehicles.map((vehicle) {
             return DropdownMenuItem(
               value: vehicle,
               child: Row(
                 children: [
-                  const Icon(Icons.directions_car,
-                      size: 20, color: Color(0xFF1A5276)),
+                  Icon(Icons.directions_car,
+                      size: 20, color: context.brand),
                   const SizedBox(width: 12),
                   Text(
                     vehicle.displayName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
+                      color: context.textPrimary,
                     ),
                   ),
                 ],

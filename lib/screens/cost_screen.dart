@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../models/entry.dart';
 import '../models/vehicle.dart';
 import '../services/entry_service.dart';
+import '../services/settings_service.dart';
+import '../theme.dart';
 import '../widgets/vehicle_selector.dart';
 
 class CostScreen extends StatefulWidget {
@@ -23,6 +25,7 @@ class CostScreen extends StatefulWidget {
 
 class _CostScreenState extends State<CostScreen> {
   final _entryService = EntryService();
+  final _settings = SettingsService();
   int _selectedPeriod = 0;
   final List<String> _periods = ['3M', '6M', '12M', 'Gesamt'];
 
@@ -37,14 +40,14 @@ class _CostScreenState extends State<CostScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FB),
+      backgroundColor: context.bgColor,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Kosten',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: context.textPrimary),
         ),
         centerTitle: true,
-        backgroundColor: const Color(0xFFF8F9FB),
+        backgroundColor: context.bgColor,
         elevation: 0,
         scrolledUnderElevation: 0,
       ),
@@ -109,11 +112,13 @@ class _CostScreenState extends State<CostScreen> {
                             decoration: BoxDecoration(
                               color: isSelected
                                   ? const Color(0xFF1A5276)
+                                  : context.cardColor,
                                   : Colors.white,
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
                                 color: isSelected
                                     ? const Color(0xFF1A5276)
+                                    : context.borderColor,
                                     : const Color(0xFFE0E0E0),
                               ),
                             ),
@@ -124,6 +129,7 @@ class _CostScreenState extends State<CostScreen> {
                                 fontWeight: FontWeight.w600,
                                 color: isSelected
                                     ? Colors.white
+                                    : context.textPrimary,
                                     : const Color(0xFF1A1A2E),
                               ),
                             ),
@@ -218,6 +224,7 @@ class _CostScreenState extends State<CostScreen> {
   }
 
   String _formatCurrency(double value) {
+    return _settings.formatCost(value);
     return '${value.toStringAsFixed(2).replaceAll('.', ',')} €';
   }
 
@@ -229,16 +236,16 @@ class _CostScreenState extends State<CostScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE8ECF0)),
+        border: Border.all(color: context.borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
-            style: const TextStyle(fontSize: 13, color: Color(0xFF8E8E93)),
+            style: TextStyle(fontSize: 13, color: context.textSecondary),
           ),
           const SizedBox(height: 6),
           FittedBox(
@@ -246,6 +253,10 @@ class _CostScreenState extends State<CostScreen> {
             alignment: Alignment.centerLeft,
             child: Text(
               value,
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: context.textPrimary,
               style: const TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
@@ -257,7 +268,7 @@ class _CostScreenState extends State<CostScreen> {
           if (subtitle != null)
             Text(
               subtitle,
-              style: const TextStyle(fontSize: 12, color: Color(0xFF8E8E93)),
+              style: TextStyle(fontSize: 12, color: context.textSecondary),
             ),
         ],
       ),
@@ -272,30 +283,35 @@ class _CostScreenState extends State<CostScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE8ECF0)),
+        border: Border.all(color: context.borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.pie_chart_outline,
+              const Icon(Icons.pie_chart_outline,
                   size: 20, color: Color(0xFF1A5276)),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Text(
                 'Kostenverteilung',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF1A1A2E),
+                  color: context.textPrimary,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 20),
           if (!hasData)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Text('Keine Daten vorhanden',
+                    style: TextStyle(color: context.textSecondary)),
             const Center(
               child: Padding(
                 padding: EdgeInsets.all(20),
@@ -341,6 +357,7 @@ class _CostScreenState extends State<CostScreen> {
                           ],
                         ),
                       ),
+                      Column(
                       const Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -349,6 +366,7 @@ class _CostScreenState extends State<CostScreen> {
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
+                              color: context.textPrimary,
                               color: Color(0xFF1A1A2E),
                             ),
                           ),
@@ -356,6 +374,7 @@ class _CostScreenState extends State<CostScreen> {
                             'GESAMT',
                             style: TextStyle(
                               fontSize: 10,
+                              color: context.textSecondary,
                               color: Color(0xFF8E8E93),
                               letterSpacing: 0.5,
                             ),
@@ -402,15 +421,15 @@ class _CostScreenState extends State<CostScreen> {
         Expanded(
           child: Text(
             label,
-            style: const TextStyle(fontSize: 14, color: Color(0xFF1A1A2E)),
+            style: TextStyle(fontSize: 14, color: context.textPrimary),
           ),
         ),
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF1A1A2E),
+            color: context.textPrimary,
           ),
         ),
       ],
@@ -425,9 +444,9 @@ class _CostScreenState extends State<CostScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE8ECF0)),
+        border: Border.all(color: context.borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -437,13 +456,13 @@ class _CostScreenState extends State<CostScreen> {
               const Icon(Icons.bar_chart,
                   size: 20, color: Color(0xFF1A5276)),
               const SizedBox(width: 8),
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Monatliche Kosten',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF1A1A2E),
+                    color: context.textPrimary,
                   ),
                 ),
               ),
@@ -451,7 +470,7 @@ class _CostScreenState extends State<CostScreen> {
                 'Letzte 6 Monate',
                 style: TextStyle(
                   fontSize: 12,
-                  color: const Color(0xFF8E8E93).withValues(alpha: 0.8),
+                  color: context.textSecondary.withValues(alpha: 0.8),
                 ),
               ),
             ],
@@ -468,6 +487,7 @@ class _CostScreenState extends State<CostScreen> {
                   touchTooltipData: BarTouchTooltipData(
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
                       return BarTooltipItem(
+                        '${rod.toY.toStringAsFixed(2).replaceAll('.', ',')} ${_settings.currency}',
                         '${rod.toY.toStringAsFixed(2).replaceAll('.', ',')} €',
                         const TextStyle(
                           color: Colors.white,
@@ -495,6 +515,7 @@ class _CostScreenState extends State<CostScreen> {
                                 fontSize: 12,
                                 color: isLast
                                     ? const Color(0xFF1A5276)
+                                    : context.textSecondary,
                                     : const Color(0xFF8E8E93),
                                 fontWeight: isLast
                                     ? FontWeight.w700

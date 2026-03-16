@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import '../models/entry.dart';
 import '../services/entry_service.dart';
+import '../services/settings_service.dart';
+import '../services/storage_service.dart';
+import '../services/vehicle_service.dart';
+import '../theme.dart';
 import '../services/storage_service.dart';
 import '../services/vehicle_service.dart';
 import '../widgets/document_picker.dart';
@@ -24,6 +28,7 @@ class AddFuelScreen extends StatefulWidget {
 class _AddFuelScreenState extends State<AddFuelScreen> {
   final _formKey = GlobalKey<FormState>();
   final _entryService = EntryService();
+  final _settings = SettingsService();
   final _vehicleService = VehicleService();
   final _storageService = StorageService();
   final _docPickerKey = GlobalKey<DocumentPickerState>();
@@ -229,6 +234,7 @@ class _AddFuelScreenState extends State<AddFuelScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: context.bgColor,
       backgroundColor: const Color(0xFFF8F9FB),
       appBar: AppBar(
         title: Text(
@@ -236,6 +242,7 @@ class _AddFuelScreenState extends State<AddFuelScreen> {
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
         ),
         centerTitle: true,
+        backgroundColor: context.bgColor,
         backgroundColor: const Color(0xFFF8F9FB),
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -259,6 +266,7 @@ class _AddFuelScreenState extends State<AddFuelScreen> {
                 onTap: _pickDate,
                 borderRadius: BorderRadius.circular(12),
                 child: InputDecorator(
+                  decoration: _inputDecoration(context, 'Datum'),
                   decoration: _inputDecoration('Datum'),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -267,6 +275,8 @@ class _AddFuelScreenState extends State<AddFuelScreen> {
                         '${_selectedDate.day.toString().padLeft(2, '0')}.${_selectedDate.month.toString().padLeft(2, '0')}.${_selectedDate.year}',
                         style: const TextStyle(fontSize: 16),
                       ),
+                      Icon(Icons.calendar_today,
+                          size: 20, color: context.textSecondary),
                       const Icon(Icons.calendar_today,
                           size: 20, color: Color(0xFF8E8E93)),
                     ],
@@ -274,6 +284,8 @@ class _AddFuelScreenState extends State<AddFuelScreen> {
                 ),
               ),
               const SizedBox(height: 12),
+              _buildField(context,
+                  _totalCostController, 'Gesamtkosten (${_settings.currency})', 'z.B. 75,40',
               _buildField(
                   _totalCostController, 'Gesamtkosten (€)', 'z.B. 75,40',
                   keyboardType: TextInputType.number),
@@ -281,12 +293,16 @@ class _AddFuelScreenState extends State<AddFuelScreen> {
               Row(
                 children: [
                   Expanded(
+                    child: _buildField(context,
+                        _litersController, '${_settings.volumeUnit} (optional)', 'z.B. 45,5',
                     child: _buildField(
                         _litersController, 'Liter (optional)', 'z.B. 45,5',
                         keyboardType: TextInputType.number, required: false),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
+                    child: _buildField(context,
+                        _pricePerLiterController, '${_settings.currency}/${_settings.volumeUnit} (optional)', 'z.B. 1,659',
                     child: _buildField(
                         _pricePerLiterController, '€/Liter (optional)', 'z.B. 1,659',
                         keyboardType: TextInputType.number, required: false),
@@ -321,6 +337,11 @@ class _AddFuelScreenState extends State<AddFuelScreen> {
                   ),
                 ),
               const SizedBox(height: 12),
+              _buildField(context,
+                  _mileageController, '${_settings.distanceUnit == "km" ? "Kilometerstand" : "Meilenstand"} (optional)', 'z.B. 12500',
+                  keyboardType: TextInputType.number, required: false),
+              const SizedBox(height: 12),
+              _buildField(context, _stationController, 'Tankstelle (optional)',
               _buildField(
                   _mileageController, 'Kilometerstand (optional)', 'z.B. 12500',
                   keyboardType: TextInputType.number, required: false),
@@ -340,6 +361,9 @@ class _AddFuelScreenState extends State<AddFuelScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 decoration: BoxDecoration(
+                  color: context.cardColor,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: context.borderColor),
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: const Color(0xFFE8ECF0)),
@@ -363,6 +387,7 @@ class _AddFuelScreenState extends State<AddFuelScreen> {
   }
 
   Widget _buildField(
+    BuildContext context,
     TextEditingController controller,
     String label,
     String hint, {
@@ -375,6 +400,11 @@ class _AddFuelScreenState extends State<AddFuelScreen> {
       validator: required
           ? (v) => (v == null || v.trim().isEmpty) ? 'Pflichtfeld' : null
           : null,
+      decoration: _inputDecoration(context, label, hint: hint),
+    );
+  }
+
+  InputDecoration _inputDecoration(BuildContext context, String label, {String? hint}) {
       decoration: _inputDecoration(label, hint: hint),
     );
   }
@@ -384,6 +414,14 @@ class _AddFuelScreenState extends State<AddFuelScreen> {
       labelText: label,
       hintText: hint,
       filled: true,
+      fillColor: context.inputFill,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: context.borderColor),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: context.borderColor),
       fillColor: Colors.white,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),

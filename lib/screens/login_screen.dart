@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../theme.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -30,7 +31,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.bgColor,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -53,22 +54,22 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 24),
               // App Title
-              const Text(
+              Text(
                 'Fahrzeugverwaltung',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1A1A2E),
+                  color: context.textPrimary,
                 ),
               ),
               const SizedBox(height: 12),
               // Subtitle
-              const Text(
+              Text(
                 'Verwalten Sie Ihren Fuhrpark\neffizient und unkompliziert an einem\nOrt.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 15,
-                  color: Color(0xFF8E8E93),
+                  color: context.textSecondary,
                   height: 1.4,
                 ),
               ),
@@ -92,20 +93,20 @@ class _LoginScreenState extends State<LoginScreen> {
                           errorBuilder: (context, error, stackTrace) =>
                               const Icon(Icons.g_mobiledata, size: 24),
                         ),
-                  label: const Text(
+                  label: Text(
                     'Mit Google anmelden',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
-                      color: Color(0xFF1A1A2E),
+                      color: context.textPrimary,
                     ),
                   ),
                   style: OutlinedButton.styleFrom(
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(26),
                     ),
-                    side: const BorderSide(color: Color(0xFFE0E0E0)),
-                    backgroundColor: Colors.white,
+                    side: BorderSide(color: context.borderColor),
+                    backgroundColor: context.cardColor,
                   ),
                 ),
               ),

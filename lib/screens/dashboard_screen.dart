@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../models/entry.dart';
 import '../models/vehicle.dart';
 import '../services/entry_service.dart';
+import '../services/settings_service.dart';
+import '../theme.dart';
 import '../widgets/entry_card.dart';
 import '../widgets/summary_card.dart';
 import '../widgets/vehicle_selector.dart';
@@ -24,18 +26,19 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   final _entryService = EntryService();
+  final _settings = SettingsService();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FB),
+      backgroundColor: context.bgColor,
       appBar: AppBar(
         title: const Text(
           'Dashboard',
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
         ),
         centerTitle: true,
-        backgroundColor: const Color(0xFFF8F9FB),
+        backgroundColor: context.bgColor,
         elevation: 0,
         scrolledUnderElevation: 0,
       ),
@@ -86,7 +89,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: const Color(0xFF1A5276).withValues(alpha: 0.7),
+                      color: context.sectionHeader,
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -104,17 +107,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     children: [
                       SummaryCard(
                         icon: Icons.speed,
+                        value: _settings.formatDistance(widget.selectedVehicle.mileage),
                         value: '${_formatNumber(widget.selectedVehicle.mileage)} km',
                         label: 'Kilometerstand',
                       ),
                       SummaryCard(
                         icon: Icons.account_balance_wallet,
+                        value: _settings.formatCost(monthCosts),
                         value: '${monthCosts.toStringAsFixed(2).replaceAll('.', ',')} €',
                         label: 'Kosten / Monat',
                       ),
                       SummaryCard(
                         icon: Icons.local_gas_station,
                         value: avgConsumption,
+                        label: 'Ø Verbr. / ${_settings.consumptionUnit}',
+                      ),
+                      SummaryCard(
+                        icon: Icons.format_list_numbered,
+                        value: '$totalEntries',
+                        label: 'Einträge gesamt',
+                      ),
                         label: 'Ø Verbr. / 100km',
                       ),
                       SummaryCard(
@@ -133,6 +145,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
+                      color: context.sectionHeader,
                       color: const Color(0xFF1A5276).withValues(alpha: 0.7),
                       letterSpacing: 0.5,
                     ),
@@ -145,6 +158,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ? Container(
                           padding: const EdgeInsets.all(24),
                           decoration: BoxDecoration(
+                            color: context.cardColor,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: context.borderColor),
+                          ),
+                          child: Center(
+                            child: Text(
+                              'Noch keine Einträge vorhanden',
+                              style: TextStyle(
+                                  fontSize: 15, color: context.textSecondary),
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(color: const Color(0xFFE8ECF0)),
@@ -173,15 +195,5 @@ class _DashboardScreenState extends State<DashboardScreen> {
         },
       ),
     );
-  }
-
-  String _formatNumber(int number) {
-    final str = number.toString();
-    final buffer = StringBuffer();
-    for (var i = 0; i < str.length; i++) {
-      if (i > 0 && (str.length - i) % 3 == 0) buffer.write('.');
-      buffer.write(str[i]);
-    }
-    return buffer.toString();
   }
 }

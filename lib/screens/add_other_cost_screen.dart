@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../models/entry.dart';
 import '../services/entry_service.dart';
+import '../services/settings_service.dart';
+import '../services/storage_service.dart';
+import '../theme.dart';
 import '../services/storage_service.dart';
 import '../widgets/document_picker.dart';
 
@@ -21,6 +24,7 @@ class AddOtherCostScreen extends StatefulWidget {
 class _AddOtherCostScreenState extends State<AddOtherCostScreen> {
   final _formKey = GlobalKey<FormState>();
   final _entryService = EntryService();
+  final _settings = SettingsService();
   final _storageService = StorageService();
   final _docPickerKey = GlobalKey<DocumentPickerState>();
 
@@ -163,6 +167,7 @@ class _AddOtherCostScreenState extends State<AddOtherCostScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: context.bgColor,
       backgroundColor: const Color(0xFFF8F9FB),
       appBar: AppBar(
         title: Text(
@@ -170,6 +175,7 @@ class _AddOtherCostScreenState extends State<AddOtherCostScreen> {
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
         ),
         centerTitle: true,
+        backgroundColor: context.bgColor,
         backgroundColor: const Color(0xFFF8F9FB),
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -192,6 +198,7 @@ class _AddOtherCostScreenState extends State<AddOtherCostScreen> {
                 onTap: _pickDate,
                 borderRadius: BorderRadius.circular(12),
                 child: InputDecorator(
+                  decoration: _inputDecoration('Datum', context: context),
                   decoration: _inputDecoration('Datum'),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -200,6 +207,8 @@ class _AddOtherCostScreenState extends State<AddOtherCostScreen> {
                         '${_selectedDate.day.toString().padLeft(2, '0')}.${_selectedDate.month.toString().padLeft(2, '0')}.${_selectedDate.year}',
                         style: const TextStyle(fontSize: 16),
                       ),
+                      Icon(Icons.calendar_today,
+                          size: 20, color: context.textSecondary),
                       const Icon(Icons.calendar_today,
                           size: 20, color: Color(0xFF8E8E93)),
                     ],
@@ -213,6 +222,13 @@ class _AddOtherCostScreenState extends State<AddOtherCostScreen> {
                     .map((c) => DropdownMenuItem(value: c, child: Text(c)))
                     .toList(),
                 onChanged: (v) => setState(() => _category = v!),
+                decoration: _inputDecoration('Kategorie', context: context),
+              ),
+              const SizedBox(height: 12),
+              _buildField(context,
+                  _descriptionController, 'Beschreibung', 'z.B. KFZ-Steuer 2026'),
+              const SizedBox(height: 12),
+              _buildField(context, _costController, 'Kosten (${_settings.currency})', 'z.B. 120.00',
                 decoration: _inputDecoration('Kategorie'),
               ),
               const SizedBox(height: 12),
@@ -228,6 +244,10 @@ class _AddOtherCostScreenState extends State<AddOtherCostScreen> {
                     .map((i) => DropdownMenuItem(value: i, child: Text(i)))
                     .toList(),
                 onChanged: (v) => setState(() => _interval = v!),
+                decoration: _inputDecoration('Intervall', context: context),
+              ),
+              const SizedBox(height: 12),
+              _buildField(context,
                 decoration: _inputDecoration('Intervall'),
               ),
               const SizedBox(height: 12),
@@ -250,6 +270,7 @@ class _AddOtherCostScreenState extends State<AddOtherCostScreen> {
   }
 
   Widget _buildField(
+    BuildContext context,
     TextEditingController controller,
     String label,
     String hint, {
@@ -264,6 +285,11 @@ class _AddOtherCostScreenState extends State<AddOtherCostScreen> {
       validator: required
           ? (v) => (v == null || v.trim().isEmpty) ? 'Pflichtfeld' : null
           : null,
+      decoration: _inputDecoration(label, hint: hint, context: context),
+    );
+  }
+
+  InputDecoration _inputDecoration(String label, {String? hint, required BuildContext context}) {
       decoration: _inputDecoration(label, hint: hint),
     );
   }
@@ -273,6 +299,14 @@ class _AddOtherCostScreenState extends State<AddOtherCostScreen> {
       labelText: label,
       hintText: hint,
       filled: true,
+      fillColor: context.inputFill,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: context.borderColor),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: context.borderColor),
       fillColor: Colors.white,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),

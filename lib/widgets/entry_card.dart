@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/entry.dart';
+import '../services/settings_service.dart';
+import '../theme.dart';
 
 class EntryCard extends StatelessWidget {
   final Entry entry;
@@ -13,19 +15,20 @@ class EntryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final settings = SettingsService();
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.cardColor,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFE8ECF0)),
+          border: Border.all(color: context.borderColor),
         ),
         child: Row(
           children: [
-            _buildIcon(),
+            _buildIcon(context),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
@@ -33,18 +36,18 @@ class EntryCard extends StatelessWidget {
                 children: [
                   Text(
                     entry.description,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1A1A2E),
+                      color: context.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 3),
                   Text(
                     _formatSubtitle(),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: Color(0xFF8E8E93),
+                      color: context.textSecondary,
                     ),
                   ),
                 ],
@@ -54,21 +57,21 @@ class EntryCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  '-${entry.cost.toStringAsFixed(2).replaceAll('.', ',')}€',
-                  style: const TextStyle(
+                  '-${settings.formatCost(entry.cost)}',
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF1A1A2E),
+                    color: context.textPrimary,
                   ),
                 ),
-                if (_trailingSubtitle() != null)
+                if (_trailingSubtitle(settings) != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 3),
                     child: Text(
-                      _trailingSubtitle()!,
-                      style: const TextStyle(
+                      _trailingSubtitle(settings)!,
+                      style: TextStyle(
                         fontSize: 12,
-                        color: Color(0xFF8E8E93),
+                        color: context.textSecondary,
                       ),
                     ),
                   ),
@@ -80,22 +83,23 @@ class EntryCard extends StatelessWidget {
     );
   }
 
-  Widget _buildIcon() {
+  Widget _buildIcon(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final (Color bg, Color fg, IconData icon) = switch (entry.type) {
       EntryType.fuel => (
-          const Color(0xFFE8F0FE),
-          const Color(0xFF1A5276),
+          isDark ? const Color(0xFF1A3A5C) : const Color(0xFFE8F0FE),
+          const Color(0xFF5DADE2),
           Icons.local_gas_station,
         ),
       EntryType.service => (
-          const Color(0xFFE8F5E9),
+          isDark ? const Color(0xFF1B3A1B) : const Color(0xFFE8F5E9),
           const Color(0xFF2E7D32),
           Icons.build,
         ),
       EntryType.otherCost => (
-          const Color(0xFFFCE4EC),
+          isDark ? const Color(0xFF3A1B1B) : const Color(0xFFFCE4EC),
           const Color(0xFFC62828),
-          Icons.local_parking,
+          Icons.euro,
         ),
     };
 
@@ -117,9 +121,10 @@ class EntryCard extends StatelessWidget {
     return date;
   }
 
-  String? _trailingSubtitle() {
+  String? _trailingSubtitle(SettingsService settings) {
     if (entry.type == EntryType.fuel && entry.liters != null) {
-      return '${entry.liters!.toStringAsFixed(1).replaceAll('.', ',')} L';
+      final vol = settings.displayVolume(entry.liters!);
+      return '${vol.toStringAsFixed(1).replaceAll('.', ',')} ${settings.volumeUnit}';
     }
     if (entry.type == EntryType.service) return 'Werkstatt';
     if (entry.type == EntryType.otherCost) return 'Sonstiges';

@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import '../models/entry.dart';
 import '../services/entry_service.dart';
+import '../services/settings_service.dart';
+import '../services/storage_service.dart';
+import '../services/vehicle_service.dart';
+import '../theme.dart';
 import '../services/storage_service.dart';
 import '../services/vehicle_service.dart';
 import '../widgets/document_picker.dart';
@@ -26,6 +30,7 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
   final _entryService = EntryService();
   final _vehicleService = VehicleService();
   final _storageService = StorageService();
+  final _settings = SettingsService();
   final _docPickerKey = GlobalKey<DocumentPickerState>();
 
   late final TextEditingController _costController;
@@ -169,6 +174,7 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: context.bgColor,
       backgroundColor: const Color(0xFFF8F9FB),
       appBar: AppBar(
         title: Text(
@@ -176,6 +182,7 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
         ),
         centerTitle: true,
+        backgroundColor: context.bgColor,
         backgroundColor: const Color(0xFFF8F9FB),
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -198,6 +205,7 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
                 onTap: _pickDate,
                 borderRadius: BorderRadius.circular(12),
                 child: InputDecorator(
+                  decoration: _inputDecoration(context, 'Datum'),
                   decoration: _inputDecoration('Datum'),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -206,6 +214,8 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
                         '${_selectedDate.day.toString().padLeft(2, '0')}.${_selectedDate.month.toString().padLeft(2, '0')}.${_selectedDate.year}',
                         style: const TextStyle(fontSize: 16),
                       ),
+                      Icon(Icons.calendar_today,
+                          size: 20, color: context.textSecondary),
                       const Icon(Icons.calendar_today,
                           size: 20, color: Color(0xFF8E8E93)),
                     ],
@@ -219,6 +229,20 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
                     .map((t) => DropdownMenuItem(value: t, child: Text(t)))
                     .toList(),
                 onChanged: (v) => setState(() => _serviceType = v!),
+                decoration: _inputDecoration(context, 'Art des Service'),
+              ),
+              const SizedBox(height: 12),
+              _buildField(context, _costController, 'Kosten (${_settings.currency})', 'z.B. 250.00',
+                  keyboardType: TextInputType.number),
+              const SizedBox(height: 12),
+              _buildField(context, _mileageController, _settings.isKm ? 'Kilometerstand' : 'Meilenstand', 'z.B. 12500',
+                  keyboardType: TextInputType.number),
+              const SizedBox(height: 12),
+              _buildField(context,
+                  _workshopController, 'Werkstatt (optional)', 'z.B. ATU',
+                  required: false),
+              const SizedBox(height: 12),
+              _buildField(context,
                 decoration: _inputDecoration('Art des Service'),
               ),
               const SizedBox(height: 12),
@@ -251,6 +275,7 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
   }
 
   Widget _buildField(
+    BuildContext context,
     TextEditingController controller,
     String label,
     String hint, {
@@ -265,6 +290,11 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
       validator: required
           ? (v) => (v == null || v.trim().isEmpty) ? 'Pflichtfeld' : null
           : null,
+      decoration: _inputDecoration(context, label, hint: hint),
+    );
+  }
+
+  InputDecoration _inputDecoration(BuildContext context, String label, {String? hint}) {
       decoration: _inputDecoration(label, hint: hint),
     );
   }
@@ -274,6 +304,14 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
       labelText: label,
       hintText: hint,
       filled: true,
+      fillColor: context.inputFill,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: context.borderColor),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: context.borderColor),
       fillColor: Colors.white,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
