@@ -103,11 +103,11 @@ class _AddOtherCostScreenState extends State<AddOtherCostScreen> {
           ),
           TextButton(
             onPressed: () async {
-              final nav = Navigator.of(context);
-              nav.pop();
+              final outerNav = Navigator.of(this.context);
+              Navigator.pop(context); // close dialog
               await _entryService.deleteOtherCost(
                   widget.vehicleId, widget.entry!.id);
-              if (mounted) nav.pop();
+              if (mounted) outerNav.pop(); // close form screen
             },
             style: TextButton.styleFrom(
                 foregroundColor: const Color(0xFFC62828)),
