@@ -270,92 +270,6 @@ class _AppShellState extends State<AppShell> {
   Widget _buildEmptyState() {
     return Scaffold(
       backgroundColor: context.bgColor,
-
-        // Auto-select first vehicle or keep selection
-        if (_selectedVehicle == null ||
-            !_vehicles.any((v) => v.id == _selectedVehicle!.id)) {
-          _selectedVehicle = _vehicles.first;
-        } else {
-          // Update selected vehicle with latest data
-          _selectedVehicle =
-              _vehicles.firstWhere((v) => v.id == _selectedVehicle!.id);
-        }
-
-        final screens = [
-          DashboardScreen(
-            vehicles: _vehicles,
-            selectedVehicle: _selectedVehicle!,
-            onVehicleChanged: _onVehicleChanged,
-          ),
-          CostScreen(
-            vehicles: _vehicles,
-            selectedVehicle: _selectedVehicle!,
-            onVehicleChanged: _onVehicleChanged,
-          ),
-          const SizedBox.shrink(),
-          LogbookScreen(
-            vehicles: _vehicles,
-            selectedVehicle: _selectedVehicle!,
-            onVehicleChanged: _onVehicleChanged,
-          ),
-          ProfileScreen(
-            vehicles: _vehicles,
-            selectedVehicle: _selectedVehicle!,
-          ),
-        ];
-
-        return Scaffold(
-          body: IndexedStack(
-            index: _currentIndex < 2 ? _currentIndex : _currentIndex - 1,
-            children: [
-              screens[0],
-              screens[1],
-              screens[3],
-              screens[4],
-            ],
-          ),
-          bottomNavigationBar: BottomAppBar(
-            shape: const CircularNotchedRectangle(),
-            notchMargin: 8,
-            color: Colors.white,
-            elevation: 8,
-            child: SizedBox(
-              height: 60,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildNavItem(0, Icons.home_outlined, Icons.home, 'Home'),
-                  _buildNavItem(
-                      1, Icons.euro_outlined, Icons.euro, 'Kosten'),
-                  const SizedBox(width: 48),
-                  _buildNavItem(
-                      3, Icons.menu_book_outlined, Icons.menu_book, 'Logbuch'),
-                  _buildNavItem(
-                      4, Icons.person_outline, Icons.person, 'Profil'),
-                ],
-              ),
-            ),
-          ),
-          floatingActionButton: SizedBox(
-            width: 56,
-            height: 56,
-            child: FloatingActionButton(
-              onPressed: _showAddEntrySheet,
-              backgroundColor: const Color(0xFF1A5276),
-              shape: const CircleBorder(),
-              child: const Icon(Icons.add, color: Colors.white, size: 28),
-            ),
-          ),
-          floatingActionButtonLocation:
-              FloatingActionButtonLocation.centerDocked,
-        );
-      },
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FB),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
@@ -367,7 +281,6 @@ class _AppShellState extends State<AppShell> {
                 height: 88,
                 decoration: BoxDecoration(
                   color: context.brandLight,
-                  color: const Color(0xFF1A5276).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: const Icon(Icons.directions_car,
@@ -375,7 +288,6 @@ class _AppShellState extends State<AppShell> {
               ),
               const SizedBox(height: 24),
               Text(
-              const Text(
                 'Kein Fahrzeug vorhanden',
                 style: TextStyle(
                   fontSize: 22,
@@ -388,14 +300,6 @@ class _AppShellState extends State<AppShell> {
                 'Fügen Sie Ihr erstes Fahrzeug hinzu,\num loszulegen.',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 15, color: context.textSecondary),
-                  color: Color(0xFF1A1A2E),
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Fügen Sie Ihr erstes Fahrzeug hinzu,\num loszulegen.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 15, color: Color(0xFF8E8E93)),
               ),
               const SizedBox(height: 32),
               SizedBox(
@@ -443,7 +347,6 @@ class _AppShellState extends State<AppShell> {
             isActive ? activeIcon : icon,
             color:
                 isActive ? const Color(0xFF1A5276) : context.textSecondary,
-                isActive ? const Color(0xFF1A5276) : const Color(0xFF8E8E93),
             size: 24,
           ),
           const SizedBox(height: 4),
@@ -454,7 +357,6 @@ class _AppShellState extends State<AppShell> {
               color: isActive
                   ? const Color(0xFF1A5276)
                   : context.textSecondary,
-                  : const Color(0xFF8E8E93),
               fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
             ),
           ),
