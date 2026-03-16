@@ -5,6 +5,7 @@ import '../services/entry_service.dart';
 import '../services/settings_service.dart';
 import '../theme.dart';
 import '../widgets/entry_card.dart';
+import '../widgets/reminder_card.dart';
 import '../widgets/summary_card.dart';
 import '../widgets/vehicle_selector.dart';
 
@@ -128,6 +129,41 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ],
                   ),
                 ),
+                // Reminders
+                Builder(builder: (context) {
+                  final reminders = buildReminders(widget.selectedVehicle);
+                  if (reminders.isEmpty) return const SizedBox.shrink();
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 24),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          'ERINNERUNGEN',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: context.sectionHeader,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          children: reminders
+                              .map((r) => Padding(
+                                    padding: const EdgeInsets.only(bottom: 8),
+                                    child: ReminderCard(reminder: r),
+                                  ))
+                              .toList(),
+                        ),
+                      ),
+                    ],
+                  );
+                }),
                 const SizedBox(height: 24),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/entry.dart';
 import '../services/entry_service.dart';
 import '../services/settings_service.dart';
+import '../services/vehicle_service.dart';
 import '../models/vehicle.dart';
 import '../theme.dart';
 import '../widgets/vehicle_selector.dart';
@@ -27,6 +28,7 @@ class LogbookScreen extends StatefulWidget {
 
 class _LogbookScreenState extends State<LogbookScreen> {
   final _entryService = EntryService();
+  final _vehicleService = VehicleService();
   final _settings = SettingsService();
   int _selectedFilter = 0;
   final List<String> _filters = ['Alle', 'Service', 'Tanken', 'Sonstige'];
@@ -98,6 +100,12 @@ class _LogbookScreenState extends State<LogbookScreen> {
         await _entryService.deleteFuelLog(vehicleId, entry.id);
       case EntryType.service:
         await _entryService.deleteService(vehicleId, entry.id);
+        if (entry.serviceType != null) {
+          await _vehicleService.recalculateReminders(
+            vehicleId: vehicleId,
+            deletedServiceType: entry.serviceType!,
+          );
+        }
       case EntryType.otherCost:
         await _entryService.deleteOtherCost(vehicleId, entry.id);
     }
@@ -406,19 +414,20 @@ class _LogbookScreenState extends State<LogbookScreen> {
   }
 
   Widget _buildEntryIcon(Entry entry) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final (Color bg, Color fg, IconData icon) = switch (entry.type) {
       EntryType.fuel => (
-          const Color(0xFFE8F0FE),
-          const Color(0xFF1A5276),
+          isDark ? const Color(0xFF1A3A5C) : const Color(0xFFE8F0FE),
+          const Color(0xFF5DADE2),
           Icons.local_gas_station,
         ),
       EntryType.service => (
-          const Color(0xFFFFF3E0),
-          const Color(0xFFE67E22),
+          isDark ? const Color(0xFF1B3A1B) : const Color(0xFFE8F5E9),
+          const Color(0xFF2E7D32),
           Icons.build,
         ),
       EntryType.otherCost => (
-          const Color(0xFFFCE4EC),
+          isDark ? const Color(0xFF3A1B1B) : const Color(0xFFFCE4EC),
           const Color(0xFFC62828),
           Icons.euro,
         ),

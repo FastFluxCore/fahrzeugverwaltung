@@ -10,6 +10,17 @@ class Vehicle {
   final int mileage;
   final String? imageUrl;
 
+  // Reminders (current / computed)
+  final DateTime? nextTuev;
+  final DateTime? nextInspection;
+  final int? oilChangeInterval;
+  final int? lastOilChangeMileage;
+
+  // Reminders (original values set by user)
+  final DateTime? originalNextTuev;
+  final DateTime? originalNextInspection;
+  final int? originalLastOilChangeMileage;
+
   Vehicle({
     required this.id,
     required this.brand,
@@ -21,6 +32,13 @@ class Vehicle {
     required this.licensePlate,
     required this.mileage,
     this.imageUrl,
+    this.nextTuev,
+    this.nextInspection,
+    this.oilChangeInterval,
+    this.lastOilChangeMileage,
+    this.originalNextTuev,
+    this.originalNextInspection,
+    this.originalLastOilChangeMileage,
   });
 
   String get displayName => '$brand $model - $licensePlate';
@@ -37,11 +55,18 @@ class Vehicle {
       licensePlate: map['licensePlate'] ?? '',
       mileage: map['mileage'] ?? 0,
       imageUrl: map['imageUrl'],
+      nextTuev: map['nextTuev'] != null ? DateTime.parse(map['nextTuev']) : null,
+      nextInspection: map['nextInspection'] != null ? DateTime.parse(map['nextInspection']) : null,
+      oilChangeInterval: map['oilChangeInterval'],
+      lastOilChangeMileage: map['lastOilChangeMileage'],
+      originalNextTuev: map['originalNextTuev'] != null ? DateTime.parse(map['originalNextTuev']) : null,
+      originalNextInspection: map['originalNextInspection'] != null ? DateTime.parse(map['originalNextInspection']) : null,
+      originalLastOilChangeMileage: map['originalLastOilChangeMileage'],
     );
   }
 
   Map<String, dynamic> toMap() {
-    return {
+    final map = {
       'brand': brand,
       'model': model,
       'year': year,
@@ -52,5 +77,13 @@ class Vehicle {
       'mileage': mileage,
       'imageUrl': imageUrl,
     };
+    if (nextTuev != null) map['nextTuev'] = nextTuev!.toIso8601String();
+    if (nextInspection != null) map['nextInspection'] = nextInspection!.toIso8601String();
+    if (oilChangeInterval != null) map['oilChangeInterval'] = oilChangeInterval;
+    if (lastOilChangeMileage != null) map['lastOilChangeMileage'] = lastOilChangeMileage;
+    if (originalNextTuev != null) map['originalNextTuev'] = originalNextTuev!.toIso8601String();
+    if (originalNextInspection != null) map['originalNextInspection'] = originalNextInspection!.toIso8601String();
+    if (originalLastOilChangeMileage != null) map['originalLastOilChangeMileage'] = originalLastOilChangeMileage;
+    return map;
   }
 }

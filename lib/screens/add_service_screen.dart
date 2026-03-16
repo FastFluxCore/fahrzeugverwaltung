@@ -101,11 +101,18 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
           ),
           TextButton(
             onPressed: () async {
-              final nav = Navigator.of(context);
-              nav.pop();
+              final outerNav = Navigator.of(this.context);
+              final serviceType = widget.entry!.serviceType;
+              Navigator.pop(context); // close dialog
               await _entryService.deleteService(
                   widget.vehicleId, widget.entry!.id);
-              if (mounted) nav.pop();
+              if (serviceType != null) {
+                await _vehicleService.recalculateReminders(
+                  vehicleId: widget.vehicleId,
+                  deletedServiceType: serviceType,
+                );
+              }
+              if (mounted) outerNav.pop(); // close form screen
             },
             style: TextButton.styleFrom(
                 foregroundColor: const Color(0xFFC62828)),
@@ -156,6 +163,14 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
       if (mileage > widget.currentMileage) {
         await _vehicleService.updateMileage(widget.vehicleId, mileage);
       }
+
+      // Auto-update reminders based on service type
+      await _vehicleService.updateRemindersAfterService(
+        vehicleId: widget.vehicleId,
+        serviceType: _serviceType,
+        serviceDate: _selectedDate,
+        mileage: mileage,
+      );
 
       if (mounted) Navigator.pop(context);
     } catch (e) {
