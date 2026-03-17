@@ -6,6 +6,7 @@ import '../services/storage_service.dart';
 import '../services/vehicle_service.dart';
 import '../theme.dart';
 import '../widgets/document_picker.dart';
+import '../widgets/sheet_picker.dart';
 
 class AddServiceScreen extends StatefulWidget {
   final String vehicleId;
@@ -231,13 +232,11 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: _serviceType,
-                items: _serviceTypes
-                    .map((t) => DropdownMenuItem(value: t, child: Text(t)))
-                    .toList(),
-                onChanged: (v) => setState(() => _serviceType = v!),
-                decoration: _inputDecoration(context, 'Art des Service'),
+              SheetPicker(
+                label: 'Art des Service',
+                value: _serviceType,
+                items: _serviceTypes,
+                onChanged: (v) => setState(() => _serviceType = v),
               ),
               const SizedBox(height: 12),
               _buildField(context, _costController, 'Kosten (${_settings.currency})', 'z.B. 250.00',

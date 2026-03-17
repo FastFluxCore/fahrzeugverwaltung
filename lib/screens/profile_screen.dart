@@ -7,6 +7,7 @@ import '../services/settings_service.dart';
 import '../services/vehicle_service.dart';
 import '../theme.dart';
 import 'add_vehicle_screen.dart';
+import 'export_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final List<Vehicle> vehicles;
@@ -220,6 +221,70 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                 ],
+              ),
+            ),
+            const SizedBox(height: 28),
+            // Export
+            _buildSectionHeader('EXPORT'),
+            const SizedBox(height: 8),
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: context.cardColor,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: context.borderColor),
+              ),
+              child: InkWell(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ExportScreen(
+                      vehicles: widget.vehicles,
+                      initialVehicle: widget.selectedVehicle,
+                    ),
+                  ),
+                ),
+                borderRadius: BorderRadius.circular(14),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: context.subtleBg,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(Icons.picture_as_pdf, color: context.brand, size: 22),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Fahrzeughistorie exportieren',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                                color: context.textPrimary,
+                              ),
+                            ),
+                            Text(
+                              'PDF mit kompletter Fahrzeughistorie',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: context.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.chevron_right, color: context.textSecondary, size: 22),
+                    ],
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 28),

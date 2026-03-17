@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/vehicle.dart';
 import '../services/vehicle_service.dart';
 import '../theme.dart';
+import '../widgets/sheet_picker.dart';
 
 class AddVehicleScreen extends StatefulWidget {
   final Vehicle? vehicle; // null = add, non-null = edit
@@ -158,18 +159,18 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                 ],
               ),
               const SizedBox(height: 12),
-              _buildDropdown(
+              SheetPicker(
                 label: 'Getriebe',
                 value: _transmission,
-                items: ['Automatik', 'Manuell'],
-                onChanged: (v) => setState(() => _transmission = v!),
+                items: const ['Automatik', 'Manuell'],
+                onChanged: (v) => setState(() => _transmission = v),
               ),
               const SizedBox(height: 12),
-              _buildDropdown(
+              SheetPicker(
                 label: 'Kraftstoff',
                 value: _fuelType,
-                items: ['Benzin', 'Diesel', 'Elektro', 'Hybrid', 'Gas'],
-                onChanged: (v) => setState(() => _fuelType = v!),
+                items: const ['Benzin', 'Diesel', 'Elektro', 'Hybrid', 'Gas'],
+                onChanged: (v) => setState(() => _fuelType = v),
               ),
               const SizedBox(height: 12),
               _buildTextField(
@@ -337,19 +338,4 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
     );
   }
 
-  Widget _buildDropdown({
-    required String label,
-    required String value,
-    required List<String> items,
-    required ValueChanged<String?> onChanged,
-  }) {
-    return DropdownButtonFormField<String>(
-      initialValue: value,
-      items: items
-          .map((item) => DropdownMenuItem(value: item, child: Text(item)))
-          .toList(),
-      onChanged: onChanged,
-      decoration: _inputDecoration(context, label),
-    );
-  }
 }

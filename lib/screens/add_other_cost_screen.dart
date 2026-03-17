@@ -5,6 +5,7 @@ import '../services/settings_service.dart';
 import '../services/storage_service.dart';
 import '../theme.dart';
 import '../widgets/document_picker.dart';
+import '../widgets/sheet_picker.dart';
 
 class AddOtherCostScreen extends StatefulWidget {
   final String vehicleId;
@@ -210,13 +211,11 @@ class _AddOtherCostScreenState extends State<AddOtherCostScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: _category,
-                items: _categories
-                    .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                    .toList(),
-                onChanged: (v) => setState(() => _category = v!),
-                decoration: _inputDecoration('Kategorie', context: context),
+              SheetPicker(
+                label: 'Kategorie',
+                value: _category,
+                items: _categories,
+                onChanged: (v) => setState(() => _category = v),
               ),
               const SizedBox(height: 12),
               _buildField(context,
@@ -225,13 +224,11 @@ class _AddOtherCostScreenState extends State<AddOtherCostScreen> {
               _buildField(context, _costController, 'Kosten (${_settings.currency})', 'z.B. 120.00',
                   keyboardType: TextInputType.number),
               const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: _interval,
-                items: _intervals
-                    .map((i) => DropdownMenuItem(value: i, child: Text(i)))
-                    .toList(),
-                onChanged: (v) => setState(() => _interval = v!),
-                decoration: _inputDecoration('Intervall', context: context),
+              SheetPicker(
+                label: 'Intervall',
+                value: _interval,
+                items: _intervals,
+                onChanged: (v) => setState(() => _interval = v),
               ),
               const SizedBox(height: 12),
               _buildField(context,
