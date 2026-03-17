@@ -37,7 +37,6 @@ class _AddFuelScreenState extends State<AddFuelScreen> {
   late final TextEditingController _mileageController;
   late final TextEditingController _stationController;
   late DateTime _selectedDate;
-  bool _fullTank = true;
   bool _isLoading = false;
 
   // Tracks which field the user last edited manually
@@ -61,7 +60,6 @@ class _AddFuelScreenState extends State<AddFuelScreen> {
         text: e?.mileage?.toString());
     _stationController = TextEditingController(text: e?.station);
     _selectedDate = e?.date ?? DateTime.now();
-    _fullTank = e?.fullTank ?? true;
 
     _litersController.addListener(() => _onFieldChanged('liters'));
     _pricePerLiterController.addListener(() => _onFieldChanged('price'));
@@ -203,7 +201,7 @@ class _AddFuelScreenState extends State<AddFuelScreen> {
             : _stationController.text.trim(),
         liters: liters,
         pricePerLiter: pricePerLiter,
-        fullTank: _fullTank,
+        fullTank: true,
         documentUrls: docUrls,
       );
 
@@ -336,25 +334,6 @@ class _AddFuelScreenState extends State<AddFuelScreen> {
                 key: _docPickerKey,
                 existingUrls: widget.entry?.documentUrls ?? [],
                 onChanged: (_) {},
-              ),
-              const SizedBox(height: 12),
-              // Full tank toggle
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                decoration: BoxDecoration(
-                  color: context.cardColor,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: context.borderColor),
-                ),
-                child: SwitchListTile(
-                  title: const Text('Vollgetankt',
-                      style: TextStyle(fontSize: 15)),
-                  value: _fullTank,
-                  onChanged: (v) => setState(() => _fullTank = v),
-                  activeTrackColor: const Color(0xFF1A5276),
-                  contentPadding: EdgeInsets.zero,
-                ),
               ),
               const SizedBox(height: 24),
               _buildSaveButton(),
