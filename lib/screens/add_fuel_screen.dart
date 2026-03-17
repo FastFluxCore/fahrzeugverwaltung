@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import '../models/entry.dart';
 import '../services/entry_service.dart';
+import '../services/receipt_scanner_service.dart';
 import '../services/settings_service.dart';
 import '../services/storage_service.dart';
 import '../services/vehicle_service.dart';
 import '../theme.dart';
 import '../widgets/document_picker.dart';
+import '../widgets/receipt_scan_button.dart';
 
 class AddFuelScreen extends StatefulWidget {
   final String vehicleId;
@@ -44,7 +46,31 @@ class _AddFuelScreenState extends State<AddFuelScreen> {
   String? _lastEditedField;
   bool _isCalculating = false;
 
+  static const _geminiKey = String.fromEnvironment('GEMINI_API_KEY');
+
   bool get _isEditing => widget.entry != null;
+
+  void _applyScanResult(ScanResult result) {
+    _isCalculating = true;
+    if (result.date != null) setState(() => _selectedDate = result.date!);
+    if (result.totalCost != null) {
+      _totalCostController.text = result.totalCost!.toStringAsFixed(2);
+    }
+    if (result.liters != null) {
+      _litersController.text = result.liters!.toStringAsFixed(2);
+    }
+    if (result.pricePerLiter != null) {
+      _pricePerLiterController.text = result.pricePerLiter!.toStringAsFixed(3);
+    }
+    if (result.mileage != null) {
+      _mileageController.text = result.mileage.toString();
+    }
+    if (result.station != null && result.station!.isNotEmpty) {
+      _stationController.text = result.station!;
+    }
+    _isCalculating = false;
+    _validateConsistency();
+  }
 
   @override
   void initState() {
@@ -255,6 +281,14 @@ class _AddFuelScreenState extends State<AddFuelScreen> {
           key: _formKey,
           child: Column(
             children: [
+              if (!_isEditing && _geminiKey.isNotEmpty) ...[
+                ReceiptScanButton(
+                  receiptType: ReceiptType.fuel,
+                  apiKey: _geminiKey,
+                  onScanned: _applyScanResult,
+                ),
+                const SizedBox(height: 16),
+              ],
               // Date picker
               InkWell(
                 onTap: _pickDate,

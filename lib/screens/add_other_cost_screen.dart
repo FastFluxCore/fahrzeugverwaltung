@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import '../models/entry.dart';
 import '../services/entry_service.dart';
+import '../services/receipt_scanner_service.dart';
 import '../services/settings_service.dart';
 import '../services/storage_service.dart';
 import '../theme.dart';
 import '../widgets/document_picker.dart';
+import '../widgets/receipt_scan_button.dart';
 import '../widgets/sheet_picker.dart';
 
 class AddOtherCostScreen extends StatefulWidget {
@@ -36,7 +38,25 @@ class _AddOtherCostScreenState extends State<AddOtherCostScreen> {
   String _interval = 'Einmalig';
   bool _isLoading = false;
 
+  static const _geminiKey = String.fromEnvironment('GEMINI_API_KEY');
+
   bool get _isEditing => widget.entry != null;
+
+  void _applyScanResult(ScanResult result) {
+    if (result.date != null) setState(() => _selectedDate = result.date!);
+    if (result.totalCost != null) {
+      _costController.text = result.totalCost!.toStringAsFixed(2);
+    }
+    if (result.description != null && result.description!.isNotEmpty) {
+      _descriptionController.text = result.description!;
+    }
+    if (result.category != null && _categories.contains(result.category)) {
+      setState(() => _category = result.category!);
+    }
+    if (result.notes != null && result.notes!.isNotEmpty) {
+      _notesController.text = result.notes!;
+    }
+  }
 
   static const _categories = [
     'Versicherung',
@@ -192,6 +212,14 @@ class _AddOtherCostScreenState extends State<AddOtherCostScreen> {
           key: _formKey,
           child: Column(
             children: [
+              if (!_isEditing && _geminiKey.isNotEmpty) ...[
+                ReceiptScanButton(
+                  receiptType: ReceiptType.otherCost,
+                  apiKey: _geminiKey,
+                  onScanned: _applyScanResult,
+                ),
+                const SizedBox(height: 16),
+              ],
               InkWell(
                 onTap: _pickDate,
                 borderRadius: BorderRadius.circular(12),
