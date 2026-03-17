@@ -57,13 +57,15 @@ class _AddFuelScreenState extends State<AddFuelScreen> {
     _totalCostController =
         TextEditingController(text: e?.cost.toStringAsFixed(2));
     _mileageController = TextEditingController(
-        text: e?.mileage?.toString());
+        text: e?.mileage?.toString() ?? widget.currentMileage.toString());
     _stationController = TextEditingController(text: e?.station);
     _selectedDate = e?.date ?? DateTime.now();
 
     _litersController.addListener(() => _onFieldChanged('liters'));
     _pricePerLiterController.addListener(() => _onFieldChanged('price'));
     _totalCostController.addListener(() => _onFieldChanged('total'));
+    _litersController.addListener(_updateConsumptionPreview);
+    _mileageController.addListener(_updateConsumptionPreview);
   }
 
   double? _parse(TextEditingController c) =>
@@ -103,6 +105,26 @@ class _AddFuelScreenState extends State<AddFuelScreen> {
   }
 
   String? _consistencyError;
+  String? _consumptionPreview;
+
+  void _updateConsumptionPreview() {
+    final liters = _parse(_litersController);
+    final mileageText = _mileageController.text.trim();
+    final mileage = int.tryParse(mileageText);
+
+    String? preview;
+    if (liters != null && liters > 0 && mileage != null && mileage > widget.currentMileage) {
+      final dist = mileage - widget.currentMileage;
+      if (dist > 0) {
+        final consumption = liters / dist * 100;
+        preview = '${consumption.toStringAsFixed(1).replaceAll('.', ',')} ${_settings.consumptionUnit}';
+      }
+    }
+
+    if (preview != _consumptionPreview) {
+      setState(() => _consumptionPreview = preview);
+    }
+  }
 
   void _validateConsistency() {
     final liters = _parse(_litersController);
@@ -180,8 +202,7 @@ class _AddFuelScreenState extends State<AddFuelScreen> {
           double.parse(_totalCostController.text.replaceAll(',', '.'));
       final liters = _parse(_litersController);
       final pricePerLiter = _parse(_pricePerLiterController);
-      final mileageText = _mileageController.text.trim();
-      final mileage = mileageText.isEmpty ? null : int.parse(mileageText);
+      final mileage = int.parse(_mileageController.text.trim());
 
       final docUrls = await _docPickerKey.currentState!.uploadAll(
         vehicleId: widget.vehicleId,
@@ -211,7 +232,7 @@ class _AddFuelScreenState extends State<AddFuelScreen> {
         await _entryService.addFuelLog(widget.vehicleId, entry);
       }
 
-      if (mileage != null && mileage > widget.currentMileage) {
+      if (mileage > widget.currentMileage) {
         await _vehicleService.updateMileage(widget.vehicleId, mileage);
       }
 
@@ -283,8 +304,8 @@ class _AddFuelScreenState extends State<AddFuelScreen> {
                 children: [
                   Expanded(
                     child: _buildField(context,
-                        _litersController, '${_settings.volumeUnit} (optional)', 'z.B. 45,5',
-                        keyboardType: TextInputType.number, required: false),
+                        _litersController, _settings.volumeUnit, 'z.B. 45,5',
+                        keyboardType: TextInputType.number),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -322,9 +343,50 @@ class _AddFuelScreenState extends State<AddFuelScreen> {
                   ),
                 ),
               const SizedBox(height: 12),
-              _buildField(context,
-                  _mileageController, '${_settings.distanceUnit == "km" ? "Kilometerstand" : "Meilenstand"} (optional)', 'z.B. 12500',
-                  keyboardType: TextInputType.number, required: false),
+              TextFormField(
+                controller: _mileageController,
+                keyboardType: TextInputType.number,
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) return 'Pflichtfeld';
+                  final val = int.tryParse(v.trim());
+                  if (val == null) return 'Ungültige Zahl';
+                  if (!_isEditing && val < widget.currentMileage) {
+                    return 'Muss mindestens ${widget.currentMileage} ${_settings.distanceUnit} sein';
+                  }
+                  return null;
+                },
+                decoration: _inputDecoration(context,
+                    _settings.distanceUnit == 'km' ? 'Kilometerstand' : 'Meilenstand',
+                    hint: 'z.B. ${widget.currentMileage + 350}'),
+              ),
+              // Consumption preview
+              if (_consumptionPreview != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1A5276).withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.local_gas_station,
+                            color: Color(0xFF1A5276), size: 18),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Verbrauch: $_consumptionPreview',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1A5276),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               const SizedBox(height: 12),
               _buildField(context, _stationController, 'Tankstelle (optional)',
                   'z.B. Aral, Shell',
