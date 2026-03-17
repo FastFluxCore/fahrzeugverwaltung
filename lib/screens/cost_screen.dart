@@ -180,6 +180,9 @@ class _CostScreenState extends State<CostScreen> {
                 const SizedBox(height: 20),
                 // Bar Chart
                 _buildMonthlyChart(monthlyData),
+                const SizedBox(height: 20),
+                // Fuel consumption trend
+                _buildConsumptionTrend(allEntries),
                 const SizedBox(height: 80),
               ],
             ),
@@ -544,6 +547,219 @@ class _CostScreenState extends State<CostScreen> {
       ),
     );
   }
+  List<_ConsumptionPoint> _calcConsumptionPoints(List<Entry> entries) {
+    final fuelEntries = entries
+        .where((e) => e.type == EntryType.fuel && e.liters != null && e.mileage != null)
+        .toList()
+      ..sort((a, b) => a.mileage!.compareTo(b.mileage!));
+
+    final points = <_ConsumptionPoint>[];
+    for (var i = 1; i < fuelEntries.length; i++) {
+      final prev = fuelEntries[i - 1];
+      final curr = fuelEntries[i];
+      final distKm = curr.mileage! - prev.mileage!;
+      if (distKm > 0) {
+        final consumption = curr.liters! / distKm * 100;
+        points.add(_ConsumptionPoint(curr.date, consumption));
+      }
+    }
+    return points;
+  }
+
+  Widget _buildConsumptionTrend(List<Entry> entries) {
+    final points = _calcConsumptionPoints(entries);
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: context.cardColor,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: context.borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.show_chart, size: 20, color: Color(0xFF1A5276)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Verbrauchstrend',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: context.textPrimary,
+                  ),
+                ),
+              ),
+              Text(
+                _settings.consumptionUnit,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: context.textSecondary.withValues(alpha: 0.8),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          if (points.length < 2)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Text(
+                  'Mindestens 3 Tankvorgänge mit km-Stand nötig',
+                  style: TextStyle(color: context.textSecondary),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            )
+          else
+            _buildConsumptionChart(points),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildConsumptionChart(List<_ConsumptionPoint> points) {
+    final avg = points.fold<double>(0, (s, p) => s + p.value) / points.length;
+    final minY = points.fold<double>(points.first.value, (m, p) => p.value < m ? p.value : m);
+    final maxY = points.fold<double>(points.first.value, (m, p) => p.value > m ? p.value : m);
+    final padding = (maxY - minY) * 0.2;
+    final chartMinY = (minY - padding).clamp(0.0, double.infinity);
+    final chartMaxY = maxY + padding;
+
+    // Build spots
+    final spots = <FlSpot>[];
+    for (var i = 0; i < points.length; i++) {
+      spots.add(FlSpot(i.toDouble(), points[i].value));
+    }
+
+    // Show max ~6 labels on x-axis
+    final labelInterval = points.length <= 6 ? 1 : (points.length / 6).ceil();
+
+    return SizedBox(
+      height: 200,
+      child: LineChart(
+        LineChartData(
+          minY: chartMinY,
+          maxY: chartMaxY,
+          lineBarsData: [
+            // Consumption line
+            LineChartBarData(
+              spots: spots,
+              isCurved: true,
+              curveSmoothness: 0.3,
+              color: const Color(0xFF1A5276),
+              barWidth: 2.5,
+              isStrokeCapRound: true,
+              dotData: FlDotData(
+                show: true,
+                getDotPainter: (spot, percent, bar, index) {
+                  return FlDotCirclePainter(
+                    radius: 3,
+                    color: const Color(0xFF1A5276),
+                    strokeWidth: 1.5,
+                    strokeColor: Colors.white,
+                  );
+                },
+              ),
+              belowBarData: BarAreaData(
+                show: true,
+                color: const Color(0xFF1A5276).withValues(alpha: 0.08),
+              ),
+            ),
+            // Average line
+            LineChartBarData(
+              spots: [
+                FlSpot(0, avg),
+                FlSpot((points.length - 1).toDouble(), avg),
+              ],
+              isCurved: false,
+              color: const Color(0xFFF57C00),
+              barWidth: 1.5,
+              dashArray: [6, 4],
+              dotData: const FlDotData(show: false),
+            ),
+          ],
+          titlesData: FlTitlesData(
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                interval: 1,
+                reservedSize: 30,
+                getTitlesWidget: (value, meta) {
+                  final index = value.toInt();
+                  if (index < 0 || index >= points.length) return const SizedBox.shrink();
+                  if (index % labelInterval != 0 && index != points.length - 1) {
+                    return const SizedBox.shrink();
+                  }
+                  final d = points[index].date;
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}',
+                      style: TextStyle(fontSize: 10, color: context.textSecondary),
+                    ),
+                  );
+                },
+              ),
+            ),
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 42,
+                getTitlesWidget: (value, meta) {
+                  if (value == meta.min || value == meta.max) return const SizedBox.shrink();
+                  return Text(
+                    value.toStringAsFixed(1),
+                    style: TextStyle(fontSize: 10, color: context.textSecondary),
+                  );
+                },
+              ),
+            ),
+            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          ),
+          gridData: FlGridData(
+            show: true,
+            drawVerticalLine: false,
+            horizontalInterval: (chartMaxY - chartMinY) / 4,
+            getDrawingHorizontalLine: (value) => FlLine(
+              color: context.borderColor,
+              strokeWidth: 0.5,
+            ),
+          ),
+          borderData: FlBorderData(show: false),
+          lineTouchData: LineTouchData(
+            enabled: true,
+            touchTooltipData: LineTouchTooltipData(
+              getTooltipItems: (spots) {
+                return spots.map((spot) {
+                  if (spot.barIndex == 1) return null; // skip avg line tooltip
+                  return LineTooltipItem(
+                    '${spot.y.toStringAsFixed(1).replaceAll('.', ',')} ${_settings.consumptionUnit}',
+                    const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  );
+                }).toList();
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ConsumptionPoint {
+  final DateTime date;
+  final double value;
+  _ConsumptionPoint(this.date, this.value);
 }
 
 class _MonthData {
