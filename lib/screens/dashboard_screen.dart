@@ -7,7 +7,7 @@ import '../theme.dart';
 import '../widgets/entry_card.dart';
 import '../widgets/reminder_card.dart';
 import '../widgets/summary_card.dart';
-import '../widgets/vehicle_selector.dart';
+import '../widgets/vehicle_header.dart';
 
 class DashboardScreen extends StatefulWidget {
   final List<Vehicle> vehicles;
@@ -77,10 +77,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                VehicleSelector(
+                VehicleHeader(
                   selectedVehicle: widget.selectedVehicle,
                   vehicles: widget.vehicles,
-                  onChanged: widget.onVehicleChanged,
+                  onVehicleChanged: widget.onVehicleChanged,
                 ),
                 const SizedBox(height: 8),
                 Padding(
