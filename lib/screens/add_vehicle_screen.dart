@@ -1,5 +1,9 @@
+import 'dart:typed_data';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../models/vehicle.dart';
+import '../services/storage_service.dart';
 import '../services/vehicle_service.dart';
 import '../theme.dart';
 import '../widgets/sheet_picker.dart';
@@ -16,6 +20,11 @@ class AddVehicleScreen extends StatefulWidget {
 class _AddVehicleScreenState extends State<AddVehicleScreen> {
   final _formKey = GlobalKey<FormState>();
   final _vehicleService = VehicleService();
+  final _storageService = StorageService();
+
+  Uint8List? _imageBytes;
+  String? _imageFileName;
+  String? _existingImageUrl;
 
   late final TextEditingController _brandController;
   late final TextEditingController _modelController;
@@ -57,6 +66,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
       _fuelType = widget.vehicle!.fuelType;
       _nextTuev = widget.vehicle!.nextTuev;
       _nextInspection = widget.vehicle!.nextInspection;
+      _existingImageUrl = widget.vehicle!.imageUrl;
     }
   }
 
@@ -73,6 +83,28 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
     super.dispose();
   }
 
+  Future<void> _pickImage() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
+      withData: true,
+    );
+    if (result != null && result.files.single.bytes != null) {
+      setState(() {
+        _imageBytes = result.files.single.bytes;
+        _imageFileName = result.files.single.name;
+      });
+    }
+  }
+
+  void _removeImage() {
+    setState(() {
+      _imageBytes = null;
+      _imageFileName = null;
+      _existingImageUrl = null;
+    });
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -80,6 +112,25 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
     try {
       final oilInterval = _oilChangeIntervalController.text.trim();
       final lastOilMileage = _lastOilChangeMileageController.text.trim();
+
+      // Upload image if new one was picked
+      String? imageUrl = _existingImageUrl;
+      if (_imageBytes != null && _imageFileName != null) {
+        final vehicleId = widget.vehicle?.id ?? 'temp_${DateTime.now().millisecondsSinceEpoch}';
+        imageUrl = await _storageService.uploadDocument(
+          vehicleId: vehicleId,
+          entryType: 'profile',
+          fileName: _imageFileName!,
+          bytes: _imageBytes!,
+        );
+        // Delete old image if replacing
+        if (_existingImageUrl != null) {
+          await _storageService.deleteDocument(_existingImageUrl!);
+        }
+      } else if (_existingImageUrl == null && widget.vehicle?.imageUrl != null) {
+        // User removed the image
+        await _storageService.deleteDocument(widget.vehicle!.imageUrl!);
+      }
 
       final vehicle = Vehicle(
         id: widget.vehicle?.id ?? '',
@@ -91,11 +142,11 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
         fuelType: _fuelType,
         licensePlate: _licensePlateController.text.trim(),
         mileage: int.parse(_mileageController.text.trim()),
+        imageUrl: imageUrl,
         nextTuev: _nextTuev,
         nextInspection: _nextInspection,
         oilChangeInterval: oilInterval.isEmpty ? null : int.parse(oilInterval),
         lastOilChangeMileage: lastOilMileage.isEmpty ? null : int.parse(lastOilMileage),
-        // Always update originals to the user-entered values
         originalNextTuev: _nextTuev,
         originalNextInspection: _nextInspection,
         originalLastOilChangeMileage: lastOilMileage.isEmpty ? null : int.parse(lastOilMileage),
@@ -104,7 +155,37 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
       if (_isEditing) {
         await _vehicleService.updateVehicle(vehicle);
       } else {
-        await _vehicleService.addVehicle(vehicle);
+        final created = await _vehicleService.addVehicle(vehicle);
+        // Re-upload with correct vehicle ID if we used a temp one
+        if (_imageBytes != null && _imageFileName != null) {
+          final correctUrl = await _storageService.uploadDocument(
+            vehicleId: created.id,
+            entryType: 'profile',
+            fileName: _imageFileName!,
+            bytes: _imageBytes!,
+          );
+          await _vehicleService.updateVehicle(Vehicle(
+            id: created.id,
+            brand: vehicle.brand,
+            model: vehicle.model,
+            year: vehicle.year,
+            horsepower: vehicle.horsepower,
+            transmission: vehicle.transmission,
+            fuelType: vehicle.fuelType,
+            licensePlate: vehicle.licensePlate,
+            mileage: vehicle.mileage,
+            imageUrl: correctUrl,
+            nextTuev: vehicle.nextTuev,
+            nextInspection: vehicle.nextInspection,
+            oilChangeInterval: vehicle.oilChangeInterval,
+            lastOilChangeMileage: vehicle.lastOilChangeMileage,
+            originalNextTuev: vehicle.originalNextTuev,
+            originalNextInspection: vehicle.originalNextInspection,
+            originalLastOilChangeMileage: vehicle.originalLastOilChangeMileage,
+          ));
+          // Clean up temp upload
+          if (imageUrl != null) await _storageService.deleteDocument(imageUrl);
+        }
       }
 
       if (mounted) Navigator.pop(context);
@@ -139,6 +220,8 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
           key: _formKey,
           child: Column(
             children: [
+              _buildImagePicker(context),
+              const SizedBox(height: 16),
               _buildTextField(_brandController, 'Marke', 'z.B. Audi'),
               const SizedBox(height: 12),
               _buildTextField(_modelController, 'Modell', 'z.B. A4'),
@@ -250,6 +333,83 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildImagePicker(BuildContext context) {
+    final hasImage = _imageBytes != null || _existingImageUrl != null;
+    return GestureDetector(
+      onTap: _pickImage,
+      child: Container(
+        width: double.infinity,
+        height: 180,
+        decoration: BoxDecoration(
+          color: context.cardColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: context.borderColor),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: hasImage
+            ? Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (_imageBytes != null)
+                    Image.memory(_imageBytes!, fit: BoxFit.cover)
+                  else
+                    Image.network(
+                      _existingImageUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => _buildImagePlaceholder(context),
+                    ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildImageAction(Icons.edit, context.brand, _pickImage),
+                        const SizedBox(width: 6),
+                        _buildImageAction(Icons.close, const Color(0xFFC62828), _removeImage),
+                      ],
+                    ),
+                  ),
+                ],
+              )
+            : _buildImagePlaceholder(context),
+      ),
+    );
+  }
+
+  Widget _buildImagePlaceholder(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(Icons.add_a_photo_outlined, size: 36, color: context.textSecondary),
+        const SizedBox(height: 8),
+        Text(
+          'Fahrzeugbild hinzufügen',
+          style: TextStyle(fontSize: 14, color: context.textSecondary),
+        ),
+        Text(
+          'JPG, PNG, WebP',
+          style: TextStyle(fontSize: 12, color: context.textSecondary.withValues(alpha: 0.6)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildImageAction(IconData icon, Color color, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: Colors.black54,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(icon, size: 18, color: Colors.white),
       ),
     );
   }

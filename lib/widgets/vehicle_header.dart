@@ -3,16 +3,16 @@ import '../models/vehicle.dart';
 import '../services/settings_service.dart';
 import '../theme.dart';
 
-class VehicleSelector extends StatelessWidget {
-  final Vehicle? selectedVehicle;
+class VehicleHeader extends StatelessWidget {
+  final Vehicle selectedVehicle;
   final List<Vehicle> vehicles;
-  final ValueChanged<Vehicle?> onChanged;
+  final ValueChanged<Vehicle?> onVehicleChanged;
 
-  const VehicleSelector({
+  const VehicleHeader({
     super.key,
     required this.selectedVehicle,
     required this.vehicles,
-    required this.onChanged,
+    required this.onVehicleChanged,
   });
 
   void _showVehicleSheet(BuildContext context) {
@@ -51,12 +51,12 @@ class VehicleSelector extends StatelessWidget {
                     itemCount: vehicles.length,
                     itemBuilder: (_, index) {
                       final vehicle = vehicles[index];
-                      final selected = vehicle.id == selectedVehicle?.id;
+                      final selected = vehicle.id == selectedVehicle.id;
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 8),
                         child: InkWell(
                           onTap: () {
-                            onChanged(vehicle);
+                            onVehicleChanged(vehicle);
                             Navigator.pop(sheetContext);
                           },
                           borderRadius: BorderRadius.circular(12),
@@ -74,7 +74,7 @@ class VehicleSelector extends StatelessWidget {
                             ),
                             child: Row(
                               children: [
-                                _buildThumbnail(context, vehicle, selected),
+                                _buildVehicleThumbnail(context, vehicle, selected, size: 40),
                                 const SizedBox(width: 14),
                                 Expanded(
                                   child: Column(
@@ -114,10 +114,15 @@ class VehicleSelector extends StatelessWidget {
     );
   }
 
-  Widget _buildThumbnail(BuildContext context, Vehicle vehicle, bool selected, {double size = 40}) {
+  static Widget _buildVehicleThumbnail(
+    BuildContext context,
+    Vehicle vehicle,
+    bool selected, {
+    double size = 40,
+  }) {
     if (vehicle.imageUrl != null) {
       return ClipRRect(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(size * 0.25),
         child: Image.network(
           vehicle.imageUrl!,
           width: size,
@@ -130,7 +135,7 @@ class VehicleSelector extends StatelessWidget {
     return _buildFallbackIcon(context, selected, size);
   }
 
-  Widget _buildFallbackIcon(BuildContext context, bool selected, double size) {
+  static Widget _buildFallbackIcon(BuildContext context, bool selected, double size) {
     return Container(
       width: size,
       height: size,
@@ -138,7 +143,7 @@ class VehicleSelector extends StatelessWidget {
         color: selected
             ? context.brand.withValues(alpha: 0.15)
             : context.subtleBg,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(size * 0.25),
       ),
       child: Icon(Icons.directions_car,
           color: selected ? context.brand : context.textSecondary,
@@ -148,47 +153,83 @@ class VehicleSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final settings = SettingsService();
+    final hasImage = selectedVehicle.imageUrl != null;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: InkWell(
-        onTap: () => _showVehicleSheet(context),
-        borderRadius: BorderRadius.circular(12),
+        onTap: vehicles.length > 1 ? () => _showVehicleSheet(context) : null,
+        borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            color: context.subtleBg,
-            borderRadius: BorderRadius.circular(12),
+            color: context.cardColor,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: context.borderColor),
           ),
-          child: Row(
+          clipBehavior: Clip.antiAlias,
+          child: Column(
             children: [
-              if (selectedVehicle?.imageUrl != null)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: Image.network(
-                    selectedVehicle!.imageUrl!,
-                    width: 24,
-                    height: 24,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) =>
-                        Icon(Icons.directions_car, size: 20, color: context.brand),
-                  ),
-                )
-              else
-                Icon(Icons.directions_car, size: 20, color: context.brand),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  selectedVehicle?.displayName ?? 'Fahrzeug wählen',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: context.textPrimary,
-                  ),
+              // Vehicle image or placeholder
+              SizedBox(
+                width: double.infinity,
+                height: 140,
+                child: hasImage
+                    ? Image.network(
+                        selectedVehicle.imageUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => _buildHeroPlaceholder(context),
+                      )
+                    : _buildHeroPlaceholder(context),
+              ),
+              // Vehicle info bar
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${selectedVehicle.brand} ${selectedVehicle.model}',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: context.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${selectedVehicle.licensePlate} • ${selectedVehicle.year} • ${selectedVehicle.horsepower} PS • ${settings.formatDistance(selectedVehicle.mileage)}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: context.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (vehicles.length > 1)
+                      Icon(Icons.expand_more, size: 22, color: context.textSecondary),
+                  ],
                 ),
               ),
-              Icon(Icons.expand_more, size: 22, color: context.textSecondary),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeroPlaceholder(BuildContext context) {
+    return Container(
+      color: context.brand.withValues(alpha: 0.06),
+      child: Center(
+        child: Icon(
+          Icons.directions_car_outlined,
+          size: 48,
+          color: context.brand.withValues(alpha: 0.3),
         ),
       ),
     );
