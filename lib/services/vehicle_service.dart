@@ -40,24 +40,26 @@ class VehicleService {
     await _vehiclesRef.doc(vehicleId).update({'mileage': mileage});
   }
 
-  /// Updates reminder fields based on a completed service type.
+  /// Updates reminder fields based on completed service toggles.
   Future<void> updateRemindersAfterService({
     required String vehicleId,
-    required String serviceType,
+    required bool includesTuev,
+    required bool includesInspection,
+    required bool includesOilChange,
     required DateTime serviceDate,
     required int? mileage,
   }) async {
     final updates = <String, dynamic>{};
 
-    if (serviceType == 'TÜV/HU') {
+    if (includesTuev) {
       updates['nextTuev'] = DateTime(serviceDate.year + 2, serviceDate.month, serviceDate.day).toIso8601String();
     }
 
-    if (serviceType == 'Inspektion') {
+    if (includesInspection) {
       updates['nextInspection'] = DateTime(serviceDate.year + 1, serviceDate.month, serviceDate.day).toIso8601String();
     }
 
-    if (serviceType == 'Ölwechsel' && mileage != null) {
+    if (includesOilChange && mileage != null) {
       updates['lastOilChangeMileage'] = mileage;
     }
 
@@ -70,28 +72,36 @@ class VehicleService {
   /// Falls back to original values set by user if no entries remain.
   Future<void> recalculateReminders({
     required String vehicleId,
-    required String deletedServiceType,
+    required bool hadOilChange,
+    required bool hadInspection,
+    required bool hadTuev,
   }) async {
-    // Fetch all services and filter in Dart (avoids needing composite Firestore indexes)
     final snap = await _vehiclesRef.doc(vehicleId).collection('services').get();
     final vehicleDoc = await _vehiclesRef.doc(vehicleId).get();
     final vehicleData = vehicleDoc.data() ?? {};
     final updates = <String, dynamic>{};
 
-    final matchingEntries = snap.docs
-        .where((doc) => doc.data()['serviceType'] == deletedServiceType)
-        .toList();
+    // Helper: check if a doc matches a toggle (supports both new booleans and legacy serviceType)
+    bool docMatches(Map<String, dynamic> data, String boolField, String legacyType) {
+      if (data[boolField] == true) return true;
+      return data['serviceType'] == legacyType;
+    }
 
-    // Sort by date descending
-    matchingEntries.sort((a, b) {
-      final dateA = a.data()['date'] as String? ?? '';
-      final dateB = b.data()['date'] as String? ?? '';
-      return dateB.compareTo(dateA);
-    });
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> sortedByDate(
+        bool Function(Map<String, dynamic>) filter) {
+      final matched = snap.docs.where((doc) => filter(doc.data())).toList();
+      matched.sort((a, b) {
+        final dateA = a.data()['date'] as String? ?? '';
+        final dateB = b.data()['date'] as String? ?? '';
+        return dateB.compareTo(dateA);
+      });
+      return matched;
+    }
 
-    if (deletedServiceType == 'TÜV/HU') {
-      if (matchingEntries.isNotEmpty) {
-        final date = DateTime.parse(matchingEntries.first.data()['date']);
+    if (hadTuev) {
+      final entries = sortedByDate((d) => docMatches(d, 'includesTuev', 'TÜV/HU'));
+      if (entries.isNotEmpty) {
+        final date = DateTime.parse(entries.first.data()['date']);
         updates['nextTuev'] = DateTime(date.year + 2, date.month, date.day).toIso8601String();
       } else if (vehicleData['originalNextTuev'] != null) {
         updates['nextTuev'] = vehicleData['originalNextTuev'];
@@ -100,9 +110,10 @@ class VehicleService {
       }
     }
 
-    if (deletedServiceType == 'Inspektion') {
-      if (matchingEntries.isNotEmpty) {
-        final date = DateTime.parse(matchingEntries.first.data()['date']);
+    if (hadInspection) {
+      final entries = sortedByDate((d) => docMatches(d, 'includesInspection', 'Inspektion'));
+      if (entries.isNotEmpty) {
+        final date = DateTime.parse(entries.first.data()['date']);
         updates['nextInspection'] = DateTime(date.year + 1, date.month, date.day).toIso8601String();
       } else if (vehicleData['originalNextInspection'] != null) {
         updates['nextInspection'] = vehicleData['originalNextInspection'];
@@ -111,9 +122,10 @@ class VehicleService {
       }
     }
 
-    if (deletedServiceType == 'Ölwechsel') {
-      if (matchingEntries.isNotEmpty) {
-        final mileage = matchingEntries.first.data()['mileage'];
+    if (hadOilChange) {
+      final entries = sortedByDate((d) => docMatches(d, 'includesOilChange', 'Ölwechsel'));
+      if (entries.isNotEmpty) {
+        final mileage = entries.first.data()['mileage'];
         if (mileage != null) {
           updates['lastOilChangeMileage'] = mileage;
         }

@@ -8,7 +8,7 @@ import '../services/vehicle_service.dart';
 import '../theme.dart';
 import '../widgets/document_picker.dart';
 import '../widgets/receipt_scan_button.dart';
-import '../widgets/sheet_picker.dart';
+
 
 class AddServiceScreen extends StatefulWidget {
   final String vehicleId;
@@ -34,12 +34,15 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
   final _settings = SettingsService();
   final _docPickerKey = GlobalKey<DocumentPickerState>();
 
+  late final TextEditingController _descriptionController;
   late final TextEditingController _costController;
   late final TextEditingController _mileageController;
   late final TextEditingController _workshopController;
   late final TextEditingController _notesController;
   late DateTime _selectedDate;
-  String _serviceType = 'Ölwechsel';
+  bool _includesOilChange = false;
+  bool _includesInspection = false;
+  bool _includesTuev = false;
   bool _isLoading = false;
 
   static const _geminiKey = String.fromEnvironment('GEMINI_API_KEY');
@@ -54,47 +57,40 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
     if (result.mileage != null) {
       _mileageController.text = result.mileage.toString();
     }
-    if (result.serviceType != null && _serviceTypes.contains(result.serviceType)) {
-      setState(() => _serviceType = result.serviceType!);
-    }
     if (result.workshop != null && result.workshop!.isNotEmpty) {
       _workshopController.text = result.workshop!;
     }
-    if (result.notes != null && result.notes!.isNotEmpty) {
-      _notesController.text = result.notes!;
+    if (result.description != null && result.description!.isNotEmpty) {
+      _descriptionController.text = result.description!;
     }
+    setState(() {
+      if (result.includesOilChange) _includesOilChange = true;
+      if (result.includesInspection) _includesInspection = true;
+      if (result.includesTuev) _includesTuev = true;
+    });
   }
-
-  static const _serviceTypes = [
-    'Ölwechsel',
-    'Inspektion',
-    'Bremsen',
-    'Reifen',
-    'TÜV/HU',
-    'Zahnriemen',
-    'Batterie',
-    'Klimaanlage',
-    'Auspuff',
-    'Sonstiges',
-  ];
 
   @override
   void initState() {
     super.initState();
     final e = widget.entry;
+    _descriptionController = TextEditingController(text: e?.description == 'Service' ? '' : e?.description);
     _costController = TextEditingController(text: e?.cost.toStringAsFixed(2));
     _mileageController = TextEditingController(
         text: e?.mileage?.toString() ?? widget.currentMileage.toString());
     _workshopController = TextEditingController(text: e?.workshop);
     _notesController = TextEditingController(text: e?.notes);
     _selectedDate = e?.date ?? DateTime.now();
-    if (e?.serviceType != null && _serviceTypes.contains(e!.serviceType)) {
-      _serviceType = e.serviceType!;
+    if (e != null) {
+      _includesOilChange = e.includesOilChange;
+      _includesInspection = e.includesInspection;
+      _includesTuev = e.includesTuev;
     }
   }
 
   @override
   void dispose() {
+    _descriptionController.dispose();
     _costController.dispose();
     _mileageController.dispose();
     _workshopController.dispose();
@@ -126,14 +122,16 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
           TextButton(
             onPressed: () async {
               final outerNav = Navigator.of(this.context);
-              final serviceType = widget.entry!.serviceType;
+              final entry = widget.entry!;
               Navigator.pop(context); // close dialog
               await _entryService.deleteService(
-                  widget.vehicleId, widget.entry!.id);
-              if (serviceType != null) {
+                  widget.vehicleId, entry.id);
+              if (entry.includesOilChange || entry.includesInspection || entry.includesTuev) {
                 await _vehicleService.recalculateReminders(
                   vehicleId: widget.vehicleId,
-                  deletedServiceType: serviceType,
+                  hadOilChange: entry.includesOilChange,
+                  hadInspection: entry.includesInspection,
+                  hadTuev: entry.includesTuev,
                 );
               }
               if (mounted) outerNav.pop(); // close form screen
@@ -161,14 +159,17 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
         storageService: _storageService,
       );
 
+      final desc = _descriptionController.text.trim();
       final entry = Entry(
         id: widget.entry?.id ?? '',
         type: EntryType.service,
         date: _selectedDate,
         cost: cost,
         mileage: mileage,
-        description: _serviceType,
-        serviceType: _serviceType,
+        description: desc.isEmpty ? 'Service' : desc,
+        includesOilChange: _includesOilChange,
+        includesInspection: _includesInspection,
+        includesTuev: _includesTuev,
         workshop: _workshopController.text.trim().isEmpty
             ? null
             : _workshopController.text.trim(),
@@ -188,10 +189,12 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
         await _vehicleService.updateMileage(widget.vehicleId, mileage);
       }
 
-      // Auto-update reminders based on service type
+      // Auto-update reminders based on toggles
       await _vehicleService.updateRemindersAfterService(
         vehicleId: widget.vehicleId,
-        serviceType: _serviceType,
+        includesTuev: _includesTuev,
+        includesInspection: _includesInspection,
+        includesOilChange: _includesOilChange,
         serviceDate: _selectedDate,
         mileage: mileage,
       );
@@ -265,12 +268,15 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              SheetPicker(
-                label: 'Art des Service',
-                value: _serviceType,
-                items: _serviceTypes,
-                onChanged: (v) => setState(() => _serviceType = v),
-              ),
+              _buildToggle(context, 'Ölwechsel', _includesOilChange,
+                  (v) => setState(() => _includesOilChange = v)),
+              _buildToggle(context, 'Inspektion', _includesInspection,
+                  (v) => setState(() => _includesInspection = v)),
+              _buildToggle(context, 'TÜV/HU', _includesTuev,
+                  (v) => setState(() => _includesTuev = v)),
+              const SizedBox(height: 12),
+              _buildField(context, _descriptionController, 'Beschreibung', 'z.B. Ölwechsel, Bremsbeläge vorne, Luftfilter',
+                  required: false, maxLines: 3),
               const SizedBox(height: 12),
               _buildField(context, _costController, 'Kosten (${_settings.currency})', 'z.B. 250.00',
                   keyboardType: TextInputType.number),
@@ -296,6 +302,25 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildToggle(BuildContext context, String label, bool value, ValueChanged<bool> onChanged) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: context.inputFill,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: context.borderColor),
+      ),
+      child: SwitchListTile(
+        title: Text(label, style: const TextStyle(fontSize: 15)),
+        value: value,
+        onChanged: onChanged,
+        activeTrackColor: const Color(0xFF2E7D32),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }

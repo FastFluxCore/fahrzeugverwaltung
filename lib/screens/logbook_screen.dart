@@ -100,10 +100,12 @@ class _LogbookScreenState extends State<LogbookScreen> {
         await _entryService.deleteFuelLog(vehicleId, entry.id);
       case EntryType.service:
         await _entryService.deleteService(vehicleId, entry.id);
-        if (entry.serviceType != null) {
+        if (entry.includesOilChange || entry.includesInspection || entry.includesTuev) {
           await _vehicleService.recalculateReminders(
             vehicleId: vehicleId,
-            deletedServiceType: entry.serviceType!,
+            hadOilChange: entry.includesOilChange,
+            hadInspection: entry.includesInspection,
+            hadTuev: entry.includesTuev,
           );
         }
       case EntryType.otherCost:

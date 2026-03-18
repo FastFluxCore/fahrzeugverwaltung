@@ -11,7 +11,10 @@ class ScanResult {
   final String? station;
   final int? mileage;
   // Service fields
-  final String? serviceType;
+  final String? serviceType; // legacy
+  final bool includesOilChange;
+  final bool includesInspection;
+  final bool includesTuev;
   final String? workshop;
   final String? description;
   final String? notes;
@@ -26,6 +29,9 @@ class ScanResult {
     this.station,
     this.mileage,
     this.serviceType,
+    this.includesOilChange = false,
+    this.includesInspection = false,
+    this.includesTuev = false,
     this.workshop,
     this.description,
     this.notes,
@@ -50,6 +56,9 @@ class ScanResult {
       station: json['station'] as String?,
       mileage: (json['mileage'] as num?)?.toInt(),
       serviceType: json['serviceType'] as String?,
+      includesOilChange: json['includesOilChange'] == true,
+      includesInspection: json['includesInspection'] == true,
+      includesTuev: json['includesTuev'] == true,
       workshop: json['workshop'] as String?,
       description: json['description'] as String?,
       notes: json['notes'] as String?,
@@ -102,14 +111,15 @@ class ReceiptScannerService {
             '"liters": number, "pricePerLiter": number, "station": "string", "mileage": number}';
       case ReceiptType.service:
         return '$base\n\n'
-            'WICHTIG für serviceType: Analysiere ALLE Positionen/Arbeiten auf der Rechnung. '
-            'Wenn irgendeine Position einen Ölwechsel enthält (z.B. "Motoröl", "Ölfilter", "Ölwechsel", "Ölservice"), '
-            'dann setze serviceType auf "Ölwechsel". Gleiches gilt für andere Typen — '
-            'prüfe ob irgendeine Position zu einem der Typen passt, nicht nur die Hauptbeschreibung. '
-            'Priorisierung: TÜV/HU > Inspektion > Ölwechsel > Zahnriemen > Bremsen > Reifen > die anderen.\n\n'
+            'Analysiere ALLE Positionen/Arbeiten auf der Rechnung. '
+            'Setze die drei Boolean-Felder basierend auf den Positionen:\n'
+            '- includesOilChange: true wenn Ölwechsel, Motoröl, Ölfilter, Ölservice o.ä. enthalten\n'
+            '- includesInspection: true wenn Inspektion, Wartung, Durchsicht o.ä. enthalten\n'
+            '- includesTuev: true wenn TÜV, HU, Hauptuntersuchung o.ä. enthalten\n'
+            'Das description-Feld soll alle Positionen/Arbeiten der Rechnung auflisten.\n\n'
             'Felder: {"date": "YYYY-MM-DD", "totalCost": number, '
-            '"serviceType": "string (eine von: Ölwechsel, Inspektion, Bremsen, Reifen, TÜV/HU, Zahnriemen, Batterie, Klimaanlage, Auspuff, Sonstiges)", '
-            '"workshop": "string", "mileage": number, "notes": "string (alle Arbeiten/Positionen kurz zusammengefasst)"}';
+            '"includesOilChange": boolean, "includesInspection": boolean, "includesTuev": boolean, '
+            '"workshop": "string", "mileage": number, "description": "string (alle Arbeiten/Positionen der Rechnung)"}';
       case ReceiptType.otherCost:
         return '$base\n\nFelder: {"date": "YYYY-MM-DD", "totalCost": number, '
             '"description": "string", "category": "string (eine von: Versicherung, Steuer, Parkgebühren, Maut, Waschen, Zubehör, Finanzierung, Sonstiges)", '
