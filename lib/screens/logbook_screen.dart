@@ -395,7 +395,7 @@ class _LogbookScreenState extends State<LogbookScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Eintrag löschen'),
-        content: Text('„${entry.description}" wirklich löschen?'),
+        content: Text('„${_entryTitle(entry)}" wirklich löschen?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
