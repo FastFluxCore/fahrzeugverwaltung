@@ -96,6 +96,14 @@ class ReceiptScannerService {
     }
 
     final json = _extractJson(text);
+
+    if (type == ReceiptType.fuel && json['isValid'] != true) {
+      throw Exception('Das Bild scheint kein Tankbeleg zu sein.');
+    }
+    if (type == ReceiptType.service && json['isValid'] != true) {
+      throw Exception('Das Bild scheint keine Werkstattrechnung zu sein.');
+    }
+
     return ScanResult.fromJson(json);
   }
 
@@ -107,10 +115,17 @@ class ReceiptScannerService {
 
     switch (type) {
       case ReceiptType.fuel:
-        return '$base\n\nFelder: {"date": "YYYY-MM-DD", "totalCost": number, '
+        return '$base\n\n'
+            'Prüfe zuerst ob es sich um einen Tankbeleg/Tankquittung handelt. '
+            'Setze "isValid" auf true nur wenn es ein Beleg von einer Tankstelle ist (Kraftstoff/Benzin/Diesel). '
+            'Wenn es kein Tankbeleg ist, setze "isValid" auf false und alle anderen Felder auf null.\n\n'
+            'Felder: {"isValid": boolean, "date": "YYYY-MM-DD", "totalCost": number, '
             '"liters": number, "pricePerLiter": number, "station": "string", "mileage": number}';
       case ReceiptType.service:
         return '$base\n\n'
+            'Prüfe zuerst ob es sich um eine Werkstattrechnung/KFZ-Rechnung handelt. '
+            'Setze "isValid" auf true nur wenn es eine Rechnung von einer Werkstatt oder einem KFZ-Betrieb ist. '
+            'Wenn es keine Werkstattrechnung ist, setze "isValid" auf false und alle anderen Felder auf null.\n\n'
             'Analysiere ALLE Positionen/Arbeiten auf der Rechnung. '
             'Setze die drei Boolean-Felder basierend auf den Positionen:\n'
             '- includesOilChange: true wenn Ölwechsel, Motoröl, Ölfilter, Ölservice o.ä. enthalten\n'
@@ -119,7 +134,7 @@ class ReceiptScannerService {
             'Das description-Feld soll alle Positionen/Arbeiten der Rechnung auflisten.\n\n'
             'Felder: {"date": "YYYY-MM-DD", "totalCost": number, '
             '"includesOilChange": boolean, "includesInspection": boolean, "includesTuev": boolean, '
-            '"workshop": "string", "mileage": number, "description": "string (alle Arbeiten/Positionen der Rechnung)"}';
+            '"isValid": boolean, "workshop": "string", "mileage": number, "description": "string (alle Arbeiten/Positionen der Rechnung)"}';
       case ReceiptType.otherCost:
         return '$base\n\nFelder: {"date": "YYYY-MM-DD", "totalCost": number, '
             '"description": "string", "category": "string (eine von: Versicherung, Steuer, Parkgebühren, Maut, Waschen, Zubehör, Finanzierung, Sonstiges)", '
