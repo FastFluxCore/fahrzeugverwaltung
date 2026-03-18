@@ -38,7 +38,6 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
   late final TextEditingController _costController;
   late final TextEditingController _mileageController;
   late final TextEditingController _workshopController;
-  late final TextEditingController _notesController;
   late DateTime _selectedDate;
   bool _includesOilChange = false;
   bool _includesInspection = false;
@@ -79,7 +78,6 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
     _mileageController = TextEditingController(
         text: e?.mileage?.toString() ?? widget.currentMileage.toString());
     _workshopController = TextEditingController(text: e?.workshop);
-    _notesController = TextEditingController(text: e?.notes);
     _selectedDate = e?.date ?? DateTime.now();
     if (e != null) {
       _includesOilChange = e.includesOilChange;
@@ -94,7 +92,6 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
     _costController.dispose();
     _mileageController.dispose();
     _workshopController.dispose();
-    _notesController.dispose();
     super.dispose();
   }
 
@@ -173,9 +170,6 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
         workshop: _workshopController.text.trim().isEmpty
             ? null
             : _workshopController.text.trim(),
-        notes: _notesController.text.trim().isEmpty
-            ? null
-            : _notesController.text.trim(),
         documentUrls: docUrls,
       );
 
@@ -287,10 +281,6 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
               _buildField(context,
                   _workshopController, 'Werkstatt (optional)', 'z.B. ATU',
                   required: false),
-              const SizedBox(height: 12),
-              _buildField(context,
-                  _notesController, 'Notizen (optional)', 'Weitere Details...',
-                  required: false, maxLines: 3),
               const SizedBox(height: 12),
               DocumentPicker(
                 key: _docPickerKey,
