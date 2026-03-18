@@ -302,7 +302,7 @@ class _LogbookScreenState extends State<LogbookScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      entry.description,
+                      _entryTitle(entry),
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -310,13 +310,15 @@ class _LogbookScreenState extends State<LogbookScreen> {
                       ),
                     ),
                     const SizedBox(height: 3),
-                    if (entry.subtitle != null)
+                    if (_entrySubtitle(entry) != null)
                       Text(
-                        entry.subtitle!,
+                        _entrySubtitle(entry)!,
                         style: TextStyle(
                           fontSize: 13,
                           color: context.textSecondary,
                         ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     const SizedBox(height: 4),
                     Row(
@@ -444,6 +446,22 @@ class _LogbookScreenState extends State<LogbookScreen> {
       ),
       child: Icon(icon, color: fg, size: 22),
     );
+  }
+
+  String _entryTitle(Entry entry) {
+    return switch (entry.type) {
+      EntryType.fuel => 'Tanken',
+      EntryType.service => 'Service',
+      EntryType.otherCost => entry.category ?? 'Sonstige Kosten',
+    };
+  }
+
+  String? _entrySubtitle(Entry entry) {
+    return switch (entry.type) {
+      EntryType.fuel => entry.station,
+      EntryType.service => entry.description != 'Service' ? entry.description : entry.workshop,
+      EntryType.otherCost => entry.description,
+    };
   }
 
   String _formatDateShort(DateTime date) {
