@@ -241,6 +241,8 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
                   receiptType: ReceiptType.service,
                   apiKey: _geminiKey,
                   onScanned: _applyScanResult,
+                  onFilePicked: (name, bytes) =>
+                      _docPickerKey.currentState?.addFile(name, bytes),
                 ),
                 const SizedBox(height: 16),
               ],

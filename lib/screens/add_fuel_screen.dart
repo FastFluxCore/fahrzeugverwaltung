@@ -286,6 +286,8 @@ class _AddFuelScreenState extends State<AddFuelScreen> {
                   receiptType: ReceiptType.fuel,
                   apiKey: _geminiKey,
                   onScanned: _applyScanResult,
+                  onFilePicked: (name, bytes) =>
+                      _docPickerKey.currentState?.addFile(name, bytes),
                 ),
                 const SizedBox(height: 16),
               ],

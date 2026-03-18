@@ -101,9 +101,15 @@ class ReceiptScannerService {
         return '$base\n\nFelder: {"date": "YYYY-MM-DD", "totalCost": number, '
             '"liters": number, "pricePerLiter": number, "station": "string", "mileage": number}';
       case ReceiptType.service:
-        return '$base\n\nFelder: {"date": "YYYY-MM-DD", "totalCost": number, '
+        return '$base\n\n'
+            'WICHTIG für serviceType: Analysiere ALLE Positionen/Arbeiten auf der Rechnung. '
+            'Wenn irgendeine Position einen Ölwechsel enthält (z.B. "Motoröl", "Ölfilter", "Ölwechsel", "Ölservice"), '
+            'dann setze serviceType auf "Ölwechsel". Gleiches gilt für andere Typen — '
+            'prüfe ob irgendeine Position zu einem der Typen passt, nicht nur die Hauptbeschreibung. '
+            'Priorisierung: TÜV/HU > Inspektion > Ölwechsel > Zahnriemen > Bremsen > Reifen > die anderen.\n\n'
+            'Felder: {"date": "YYYY-MM-DD", "totalCost": number, '
             '"serviceType": "string (eine von: Ölwechsel, Inspektion, Bremsen, Reifen, TÜV/HU, Zahnriemen, Batterie, Klimaanlage, Auspuff, Sonstiges)", '
-            '"workshop": "string", "mileage": number, "notes": "string (kurze Zusammenfassung der Arbeiten)"}';
+            '"workshop": "string", "mileage": number, "notes": "string (alle Arbeiten/Positionen kurz zusammengefasst)"}';
       case ReceiptType.otherCost:
         return '$base\n\nFelder: {"date": "YYYY-MM-DD", "totalCost": number, '
             '"description": "string", "category": "string (eine von: Versicherung, Steuer, Parkgebühren, Maut, Waschen, Zubehör, Finanzierung, Sonstiges)", '

@@ -217,6 +217,8 @@ class _AddOtherCostScreenState extends State<AddOtherCostScreen> {
                   receiptType: ReceiptType.otherCost,
                   apiKey: _geminiKey,
                   onScanned: _applyScanResult,
+                  onFilePicked: (name, bytes) =>
+                      _docPickerKey.currentState?.addFile(name, bytes),
                 ),
                 const SizedBox(height: 16),
               ],

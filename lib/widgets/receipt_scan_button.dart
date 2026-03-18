@@ -9,14 +9,14 @@ class ReceiptScanButton extends StatefulWidget {
   final ReceiptType receiptType;
   final String apiKey;
   final ValueChanged<ScanResult> onScanned;
-  final ValueChanged<Uint8List>? onImagePicked;
+  final void Function(String fileName, Uint8List bytes)? onFilePicked;
 
   const ReceiptScanButton({
     super.key,
     required this.receiptType,
     required this.apiKey,
     required this.onScanned,
-    this.onImagePicked,
+    this.onFilePicked,
   });
 
   @override
@@ -35,8 +35,9 @@ class _ReceiptScanButtonState extends State<ReceiptScanButton> {
 
     if (result == null || result.files.single.bytes == null) return;
 
-    final bytes = result.files.single.bytes!;
-    widget.onImagePicked?.call(bytes);
+    final file = result.files.single;
+    final bytes = file.bytes!;
+    widget.onFilePicked?.call(file.name, bytes);
 
     setState(() => _isScanning = true);
     try {

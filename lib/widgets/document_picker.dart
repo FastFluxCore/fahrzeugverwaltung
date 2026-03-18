@@ -36,6 +36,13 @@ class DocumentPickerState extends State<DocumentPicker> {
 
   List<String> get removedUrls => _removedUrls;
 
+  void addFile(String name, Uint8List bytes) {
+    setState(() {
+      _documents.add(DocumentFile(name: name, bytes: bytes));
+    });
+    widget.onChanged(_documents);
+  }
+
   @override
   void initState() {
     super.initState();
