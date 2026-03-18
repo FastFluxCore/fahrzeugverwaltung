@@ -75,6 +75,9 @@ class _CostScreenState extends State<CostScreen> {
           final avgPerMonth =
               periodMonths > 0 ? totalCost / periodMonths : 0.0;
 
+          // Cost per km
+          final costPerKm = _calcCostPerKm(entries, widget.selectedVehicle);
+
           // Percentages for donut
           final fuelPct = totalCost > 0 ? (fuelCost / totalCost * 100) : 0.0;
           final servicePct =
@@ -84,6 +87,9 @@ class _CostScreenState extends State<CostScreen> {
 
           // Monthly data for bar chart
           final monthlyData = _calcMonthlyData(entries);
+
+          // Yearly comparison
+          final yearComparison = _calcYearComparison(allEntries);
 
           return SingleChildScrollView(
             child: Column(
@@ -157,6 +163,12 @@ class _CostScreenState extends State<CostScreen> {
                         value: _formatCurrency(avgPerMonth),
                       ),
                       _buildKpiCard(
+                        label: 'Kosten / ${_settings.distanceUnit}',
+                        value: costPerKm != null
+                            ? '${costPerKm.toStringAsFixed(2).replaceAll('.', ',')} ${_settings.currency}'
+                            : '–',
+                      ),
+                      _buildKpiCard(
                         label: 'Kraftstoff',
                         value: _formatCurrency(fuelCost),
                         subtitle: totalCost > 0
@@ -170,6 +182,13 @@ class _CostScreenState extends State<CostScreen> {
                             ? '${servicePct.toStringAsFixed(0)}% vom Gesamt'
                             : null,
                       ),
+                      _buildKpiCard(
+                        label: 'Sonstige Kosten',
+                        value: _formatCurrency(otherCost),
+                        subtitle: totalCost > 0
+                            ? '${otherPct.toStringAsFixed(0)}% vom Gesamt'
+                            : null,
+                      ),
                     ],
                   ),
                 ),
@@ -181,6 +200,11 @@ class _CostScreenState extends State<CostScreen> {
                 // Bar Chart
                 _buildMonthlyChart(monthlyData),
                 const SizedBox(height: 20),
+                // Yearly comparison
+                if (yearComparison != null)
+                  _buildYearComparison(yearComparison),
+                if (yearComparison != null)
+                  const SizedBox(height: 20),
                 // Fuel consumption trend
                 _buildConsumptionTrend(allEntries),
                 const SizedBox(height: 80),
@@ -376,13 +400,16 @@ class _CostScreenState extends State<CostScreen> {
                   child: Column(
                     children: [
                       _buildLegendItem('Tanken',
-                          '${fuelPct.toStringAsFixed(0)}%', const Color(0xFF1A5276)),
+                          '${fuelPct.toStringAsFixed(0)}%', const Color(0xFF1A5276),
+                          amount: _formatCurrency(fuel)),
                       const SizedBox(height: 12),
                       _buildLegendItem('Service',
-                          '${servicePct.toStringAsFixed(0)}%', const Color(0xFF5DADE2)),
+                          '${servicePct.toStringAsFixed(0)}%', const Color(0xFF5DADE2),
+                          amount: _formatCurrency(service)),
                       const SizedBox(height: 12),
                       _buildLegendItem('Sonstiges',
-                          '${otherPct.toStringAsFixed(0)}%', const Color(0xFF85C1E9)),
+                          '${otherPct.toStringAsFixed(0)}%', const Color(0xFF85C1E9),
+                          amount: _formatCurrency(other)),
                     ],
                   ),
                 ),
@@ -393,7 +420,7 @@ class _CostScreenState extends State<CostScreen> {
     );
   }
 
-  Widget _buildLegendItem(String label, String value, Color color) {
+  Widget _buildLegendItem(String label, String value, Color color, {String? amount}) {
     return Row(
       children: [
         Container(
@@ -406,9 +433,19 @@ class _CostScreenState extends State<CostScreen> {
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: Text(
-            label,
-            style: TextStyle(fontSize: 14, color: context.textPrimary),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(fontSize: 14, color: context.textPrimary),
+              ),
+              if (amount != null)
+                Text(
+                  amount,
+                  style: TextStyle(fontSize: 12, color: context.textSecondary),
+                ),
+            ],
           ),
         ),
         Text(
@@ -754,6 +791,253 @@ class _CostScreenState extends State<CostScreen> {
       ),
     );
   }
+  double? _calcCostPerKm(List<Entry> entries, Vehicle vehicle) {
+    final withMileage = entries
+        .where((e) => e.mileage != null)
+        .toList()
+      ..sort((a, b) => a.mileage!.compareTo(b.mileage!));
+    if (withMileage.length < 2) return null;
+    final km = withMileage.last.mileage! - withMileage.first.mileage!;
+    if (km <= 0) return null;
+    final totalCost = entries.fold<double>(0, (s, e) => s + e.cost);
+    return totalCost / km;
+  }
+
+  _YearComparison? _calcYearComparison(List<Entry> entries) {
+    final now = DateTime.now();
+    final currentYear = now.year;
+    final prevYear = currentYear - 1;
+
+    final currentEntries = entries.where((e) => e.date.year == currentYear).toList();
+    final prevEntries = entries.where((e) => e.date.year == prevYear).toList();
+
+    if (prevEntries.isEmpty && currentEntries.isEmpty) return null;
+
+    final currentTotal = currentEntries.fold<double>(0, (s, e) => s + e.cost);
+    final prevTotal = prevEntries.fold<double>(0, (s, e) => s + e.cost);
+
+    // Monthly breakdown per category
+    final currentMonthly = <int, _MonthBreakdown>{};
+    final prevMonthly = <int, _MonthBreakdown>{};
+
+    for (var m = 1; m <= 12; m++) {
+      currentMonthly[m] = _calcMonthBreakdown(currentEntries, m);
+      prevMonthly[m] = _calcMonthBreakdown(prevEntries, m);
+    }
+
+    return _YearComparison(
+      currentYear: currentYear,
+      prevYear: prevYear,
+      currentTotal: currentTotal,
+      prevTotal: prevTotal,
+      currentMonthly: currentMonthly,
+      prevMonthly: prevMonthly,
+    );
+  }
+
+  _MonthBreakdown _calcMonthBreakdown(List<Entry> entries, int month) {
+    final monthEntries = entries.where((e) => e.date.month == month);
+    return _MonthBreakdown(
+      fuel: monthEntries.where((e) => e.type == EntryType.fuel).fold<double>(0, (s, e) => s + e.cost),
+      service: monthEntries.where((e) => e.type == EntryType.service).fold<double>(0, (s, e) => s + e.cost),
+      other: monthEntries.where((e) => e.type == EntryType.otherCost).fold<double>(0, (s, e) => s + e.cost),
+    );
+  }
+
+  Widget _buildYearComparison(_YearComparison data) {
+    final now = DateTime.now();
+    final maxMonth = data.currentYear == now.year ? now.month : 12;
+
+    // Find max value for chart scaling
+    double maxY = 0;
+    for (var m = 1; m <= maxMonth; m++) {
+      final curr = data.currentMonthly[m]!;
+      final prev = data.prevMonthly[m]!;
+      final currTotal = curr.fuel + curr.service + curr.other;
+      final prevTotal = prev.fuel + prev.service + prev.other;
+      if (currTotal > maxY) maxY = currTotal;
+      if (prevTotal > maxY) maxY = prevTotal;
+    }
+    final chartMaxY = maxY > 0 ? maxY * 1.2 : 100.0;
+
+    final diff = data.currentTotal - data.prevTotal;
+    final diffPct = data.prevTotal > 0 ? (diff / data.prevTotal * 100) : 0.0;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: context.cardColor,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: context.borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.compare_arrows, size: 20, color: Color(0xFF1A5276)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Jahresvergleich',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: context.textPrimary,
+                  ),
+                ),
+              ),
+              if (data.prevTotal > 0)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: diff <= 0
+                        ? const Color(0xFF2E7D32).withValues(alpha: 0.1)
+                        : const Color(0xFFC62828).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '${diff > 0 ? '+' : ''}${diffPct.toStringAsFixed(0)}%',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: diff <= 0 ? const Color(0xFF2E7D32) : const Color(0xFFC62828),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              _buildYearLabel('${data.currentYear}', const Color(0xFF1A5276)),
+              const SizedBox(width: 4),
+              Text(_formatCurrency(data.currentTotal),
+                  style: TextStyle(fontSize: 12, color: context.textSecondary)),
+              const SizedBox(width: 16),
+              _buildYearLabel('${data.prevYear}', const Color(0xFFD6E4F0)),
+              const SizedBox(width: 4),
+              Text(_formatCurrency(data.prevTotal),
+                  style: TextStyle(fontSize: 12, color: context.textSecondary)),
+            ],
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            height: 200,
+            child: BarChart(
+              BarChartData(
+                alignment: BarChartAlignment.spaceAround,
+                maxY: chartMaxY,
+                groupsSpace: 12,
+                barTouchData: BarTouchData(
+                  enabled: true,
+                  touchTooltipData: BarTouchTooltipData(
+                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                      final year = rodIndex == 0 ? data.currentYear : data.prevYear;
+                      return BarTooltipItem(
+                        '$year: ${rod.toY.toStringAsFixed(0).replaceAll('.', ',')} ${_settings.currency}',
+                        const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                titlesData: FlTitlesData(
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 30,
+                      getTitlesWidget: (value, meta) {
+                        final month = value.toInt() + 1;
+                        if (month < 1 || month > maxMonth) return const SizedBox.shrink();
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            _shortMonth(month),
+                            style: TextStyle(fontSize: 10, color: context.textSecondary),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                ),
+                gridData: const FlGridData(show: false),
+                borderData: FlBorderData(show: false),
+                barGroups: List.generate(maxMonth, (index) {
+                  final m = index + 1;
+                  final curr = data.currentMonthly[m]!;
+                  final prev = data.prevMonthly[m]!;
+                  return BarChartGroupData(
+                    x: index,
+                    barRods: [
+                      BarChartRodData(
+                        toY: curr.fuel + curr.service + curr.other,
+                        color: const Color(0xFF1A5276),
+                        width: 8,
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(3)),
+                      ),
+                      BarChartRodData(
+                        toY: prev.fuel + prev.service + prev.other,
+                        color: const Color(0xFFD6E4F0),
+                        width: 8,
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(3)),
+                      ),
+                    ],
+                  );
+                }),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildYearLabel(String text, Color color) {
+    return Row(
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2)),
+        ),
+        const SizedBox(width: 4),
+        Text(text, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.textPrimary)),
+      ],
+    );
+  }
+}
+
+class _YearComparison {
+  final int currentYear;
+  final int prevYear;
+  final double currentTotal;
+  final double prevTotal;
+  final Map<int, _MonthBreakdown> currentMonthly;
+  final Map<int, _MonthBreakdown> prevMonthly;
+
+  _YearComparison({
+    required this.currentYear,
+    required this.prevYear,
+    required this.currentTotal,
+    required this.prevTotal,
+    required this.currentMonthly,
+    required this.prevMonthly,
+  });
+}
+
+class _MonthBreakdown {
+  final double fuel;
+  final double service;
+  final double other;
+  _MonthBreakdown({required this.fuel, required this.service, required this.other});
 }
 
 class _ConsumptionPoint {
