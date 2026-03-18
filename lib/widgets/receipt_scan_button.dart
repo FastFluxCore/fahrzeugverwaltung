@@ -37,12 +37,12 @@ class _ReceiptScanButtonState extends State<ReceiptScanButton> {
 
     final file = result.files.single;
     final bytes = file.bytes!;
-    widget.onFilePicked?.call(file.name, bytes);
 
     setState(() => _isScanning = true);
     try {
       final scanner = ReceiptScannerService(widget.apiKey);
       final scanResult = await scanner.scan(bytes, widget.receiptType);
+      widget.onFilePicked?.call(file.name, bytes);
       widget.onScanned(scanResult);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
