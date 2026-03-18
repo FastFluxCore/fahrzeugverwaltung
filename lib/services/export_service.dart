@@ -128,7 +128,7 @@ class ExportService {
               headers: ['Datum', 'Art', distanceUnit, 'Kosten', 'Werkstatt', 'Notizen'],
               data: services.map((e) => [
                 fmtDate(e.date),
-                e.serviceType ?? e.description,
+                e.description,
                 e.mileage?.toString() ?? '–',
                 fmtCost(e.cost),
                 e.workshop ?? '–',

@@ -16,7 +16,10 @@ class Entry {
   final String? station;
 
   // Service-specific
-  final String? serviceType;
+  final String? serviceType; // legacy, kept for reading old data
+  final bool includesOilChange;
+  final bool includesInspection;
+  final bool includesTuev;
   final String? workshop;
   final String? notes;
 
@@ -40,6 +43,9 @@ class Entry {
     this.fullTank,
     this.station,
     this.serviceType,
+    this.includesOilChange = false,
+    this.includesInspection = false,
+    this.includesTuev = false,
     this.workshop,
     this.notes,
     this.category,
@@ -65,15 +71,19 @@ class Entry {
   }
 
   factory Entry.fromService(String id, Map<String, dynamic> map) {
+    final legacy = map['serviceType'] as String?;
     return Entry(
       id: id,
       type: EntryType.service,
       date: DateTime.parse(map['date']),
       cost: (map['cost'] ?? 0).toDouble(),
       mileage: map['mileage'],
-      description: map['serviceType'] ?? 'Service',
+      description: map['description'] ?? legacy ?? 'Service',
       subtitle: map['workshop'],
-      serviceType: map['serviceType'],
+      serviceType: legacy,
+      includesOilChange: map['includesOilChange'] ?? (legacy == 'Ölwechsel'),
+      includesInspection: map['includesInspection'] ?? (legacy == 'Inspektion'),
+      includesTuev: map['includesTuev'] ?? (legacy == 'TÜV/HU'),
       workshop: map['workshop'],
       notes: map['notes'],
       documentUrls: List<String>.from(map['documentUrls'] ?? []),
@@ -110,7 +120,9 @@ class Entry {
       map['totalCost'] = cost;
     }
     if (type == EntryType.service) {
-      map['serviceType'] = serviceType;
+      map['includesOilChange'] = includesOilChange;
+      map['includesInspection'] = includesInspection;
+      map['includesTuev'] = includesTuev;
       map['workshop'] = workshop;
       map['notes'] = notes;
     }

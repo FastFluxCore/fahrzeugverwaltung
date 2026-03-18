@@ -100,10 +100,12 @@ class _LogbookScreenState extends State<LogbookScreen> {
         await _entryService.deleteFuelLog(vehicleId, entry.id);
       case EntryType.service:
         await _entryService.deleteService(vehicleId, entry.id);
-        if (entry.serviceType != null) {
+        if (entry.includesOilChange || entry.includesInspection || entry.includesTuev) {
           await _vehicleService.recalculateReminders(
             vehicleId: vehicleId,
-            deletedServiceType: entry.serviceType!,
+            hadOilChange: entry.includesOilChange,
+            hadInspection: entry.includesInspection,
+            hadTuev: entry.includesTuev,
           );
         }
       case EntryType.otherCost:
@@ -300,7 +302,7 @@ class _LogbookScreenState extends State<LogbookScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      entry.description,
+                      _entryTitle(entry),
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -308,13 +310,15 @@ class _LogbookScreenState extends State<LogbookScreen> {
                       ),
                     ),
                     const SizedBox(height: 3),
-                    if (entry.subtitle != null)
+                    if (_entrySubtitle(entry) != null)
                       Text(
-                        entry.subtitle!,
+                        _entrySubtitle(entry)!,
                         style: TextStyle(
                           fontSize: 13,
                           color: context.textSecondary,
                         ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     const SizedBox(height: 4),
                     Row(
@@ -391,7 +395,7 @@ class _LogbookScreenState extends State<LogbookScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Eintrag löschen'),
-        content: Text('„${entry.description}" wirklich löschen?'),
+        content: Text('„${_entryTitle(entry)}" wirklich löschen?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -442,6 +446,22 @@ class _LogbookScreenState extends State<LogbookScreen> {
       ),
       child: Icon(icon, color: fg, size: 22),
     );
+  }
+
+  String _entryTitle(Entry entry) {
+    return switch (entry.type) {
+      EntryType.fuel => 'Tanken',
+      EntryType.service => 'Service',
+      EntryType.otherCost => entry.category ?? 'Sonstige Kosten',
+    };
+  }
+
+  String? _entrySubtitle(Entry entry) {
+    return switch (entry.type) {
+      EntryType.fuel => entry.station,
+      EntryType.service => entry.description != 'Service' ? entry.description : entry.workshop,
+      EntryType.otherCost => entry.description,
+    };
   }
 
   String _formatDateShort(DateTime date) {
