@@ -33,7 +33,6 @@ class _ExportScreenState extends State<ExportScreen> {
   bool _includeServices = true;
   bool _includeFuel = true;
   bool _includeOtherCosts = true;
-  bool _includeDocuments = true;
 
   @override
   void initState() {
@@ -44,27 +43,39 @@ class _ExportScreenState extends State<ExportScreen> {
   Future<Uint8List> _generatePdf() {
     return _exportService.generatePdf(
       vehicle: _selectedVehicle,
-      currency: _settings.currency,
+      currency: 'EUR',
       distanceUnit: _settings.distanceUnit,
       volumeUnit: _settings.volumeUnit,
       includeServices: _includeServices,
       includeFuel: _includeFuel,
       includeOtherCosts: _includeOtherCosts,
-      includeDocuments: _includeDocuments,
     );
   }
 
   Future<void> _export() async {
     setState(() => _isLoading = true);
     try {
-      final pdfBytes = await _generatePdf();
+      final name = '${_selectedVehicle.brand}_${_selectedVehicle.model}';
+      final results = await Future.wait([
+        _generatePdf(),
+        _exportService.generateDocumentsPdf(vehicle: _selectedVehicle),
+      ]);
+      final pdfBytes = results[0]!;
+      final docsPdfBytes = results[1];
 
       if (!mounted) return;
 
       await Printing.sharePdf(
         bytes: pdfBytes,
-        filename: 'Fahrzeughistorie_${_selectedVehicle.brand}_${_selectedVehicle.model}.pdf',
+        filename: 'Fahrzeughistorie_$name.pdf',
       );
+
+      if (docsPdfBytes != null && mounted) {
+        await Printing.sharePdf(
+          bytes: docsPdfBytes,
+          filename: 'Dokumente_$name.pdf',
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -176,14 +187,6 @@ class _ExportScreenState extends State<ExportScreen> {
                     subtitle: 'Versicherung, Steuer, etc.',
                     value: _includeOtherCosts,
                     onChanged: (v) => setState(() => _includeOtherCosts = v),
-                  ),
-                  Divider(height: 1, indent: 56, color: context.borderColor),
-                  _buildToggle(
-                    icon: Icons.attach_file,
-                    title: 'Dokument-Links',
-                    subtitle: 'Verweise auf hinterlegte Dokumente',
-                    value: _includeDocuments,
-                    onChanged: (v) => setState(() => _includeDocuments = v),
                   ),
                 ],
               ),

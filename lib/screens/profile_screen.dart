@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../models/vehicle.dart';
 import '../services/auth_service.dart';
+import '../services/seed_service.dart';
 import '../services/settings_service.dart';
 import '../services/vehicle_service.dart';
 import '../theme.dart';
@@ -148,22 +149,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     trailing: _settings.themeLabel,
                     onTap: () => _showThemePicker(context),
                   ),
-                  const Divider(height: 1, indent: 56),
-                  _buildSettingsTile(
-                    icon: Icons.straighten,
-                    title: 'Einheiten',
-                    subtitle: null,
-                    trailing: _settings.unitLabel,
-                    onTap: () => _showUnitPicker(context),
-                  ),
-                  const Divider(height: 1, indent: 56),
-                  _buildSettingsTile(
-                    icon: Icons.account_balance_wallet_outlined,
-                    title: 'Währung',
-                    subtitle: null,
-                    trailing: _settings.currencyLabel,
-                    onTap: () => _showCurrencyPicker(context),
-                  ),
                 ],
               ),
             ),
@@ -273,6 +258,62 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                             Text(
                               'PDF mit kompletter Fahrzeughistorie',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: context.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.chevron_right, color: context.textSecondary, size: 22),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 28),
+            // Musterdaten
+            _buildSectionHeader('ENTWICKLER'),
+            const SizedBox(height: 8),
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: context.cardColor,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: context.borderColor),
+              ),
+              child: InkWell(
+                onTap: () => _seedData(context),
+                borderRadius: BorderRadius.circular(14),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: context.subtleBg,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(Icons.dataset_outlined, color: context.brand, size: 22),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Musterdaten laden',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                                color: context.textPrimary,
+                              ),
+                            ),
+                            Text(
+                              '2 Fahrzeuge mit Einträgen anlegen',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: context.textSecondary,
@@ -437,57 +478,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _showUnitPicker(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: context.cardColor,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Einheiten',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
-            _buildOption('Metrisch (km)', _settings.unit == 'km',
-                () => _settings.setUnit('km'), context),
-            _buildOption('Imperial (mi)', _settings.unit == 'mi',
-                () => _settings.setUnit('mi'), context),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showCurrencyPicker(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: context.cardColor,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Währung',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
-            _buildOption('Euro (€)', _settings.currency == '€',
-                () => _settings.setCurrency('€'), context),
-            _buildOption('Dollar (\$)', _settings.currency == '\$',
-                () => _settings.setCurrency('\$'), context),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildOption(
       String label, bool selected, VoidCallback onTap, BuildContext context) {
@@ -609,6 +599,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Future<void> _seedData(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Musterdaten laden'),
+        content: const Text(
+          '2 Fahrzeuge (BMW 320d, VW Golf 8) mit Tankeinträgen, Services und sonstigen Kosten anlegen?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Abbrechen'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Laden'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Musterdaten werden geladen...')),
+    );
+    try {
+      await SeedService().seedAll();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Musterdaten erfolgreich geladen!')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Fehler: $e')),
+        );
+      }
+    }
+  }
+
   void _showDeleteVehicleDialog(
       BuildContext context, Vehicle vehicle, VehicleService vehicleService) {
     showDialog(
@@ -639,40 +670,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _showDeleteAccountDialog(BuildContext context, AuthService authService,
       VehicleService vehicleService) {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Account löschen'),
         content: const Text(
           'Möchten Sie Ihren Account und alle zugehörigen Daten unwiderruflich löschen?',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Abbrechen'),
           ),
           TextButton(
             onPressed: () async {
-              Navigator.pop(context);
+              Navigator.pop(dialogContext);
+              scaffoldMessenger.showSnackBar(
+                const SnackBar(content: Text('Account wird gelöscht...')),
+              );
               try {
-                // Delete all vehicles (and their subcollections)
-                for (final vehicle in widget.vehicles) {
-                  await vehicleService.deleteVehicle(vehicle.id);
-                }
-                // Delete user document
                 final uid = FirebaseAuth.instance.currentUser!.uid;
+                // Delete all vehicles in parallel
+                await Future.wait(
+                  widget.vehicles.map((v) => vehicleService.deleteVehicle(v.id)),
+                );
+                // Delete user document
                 await FirebaseFirestore.instance
                     .collection('users')
                     .doc(uid)
                     .delete();
-                // Delete auth account
+                // Delete auth account (re-auths if needed)
                 await authService.deleteAccount();
               } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Fehler: $e')),
-                  );
-                }
+                scaffoldMessenger.showSnackBar(
+                  SnackBar(content: Text('Fehler: $e')),
+                );
               }
             },
             style:

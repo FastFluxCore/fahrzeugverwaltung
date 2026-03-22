@@ -35,7 +35,7 @@ class EntryCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    entry.description,
+                    _displayTitle(),
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -133,6 +133,14 @@ class EntryCard extends StatelessWidget {
     );
   }
 
+  String _displayTitle() {
+    return switch (entry.type) {
+      EntryType.fuel => 'Tanken',
+      EntryType.service => 'Service',
+      EntryType.otherCost => entry.description,
+    };
+  }
+
   String _formatSubtitle() {
     final date = '${entry.date.day.toString().padLeft(2, '0')}. '
         '${_monthName(entry.date.month)} ${entry.date.year}';
@@ -142,8 +150,7 @@ class EntryCard extends StatelessWidget {
 
   String? _trailingSubtitle(SettingsService settings) {
     if (entry.type == EntryType.fuel && entry.liters != null) {
-      final vol = settings.displayVolume(entry.liters!);
-      return '${vol.toStringAsFixed(1).replaceAll('.', ',')} ${settings.volumeUnit}';
+      return '${entry.liters!.toStringAsFixed(1).replaceAll('.', ',')} ${settings.volumeUnit}';
     }
     if (entry.type == EntryType.service) return 'Werkstatt';
     if (entry.type == EntryType.otherCost) return 'Sonstiges';

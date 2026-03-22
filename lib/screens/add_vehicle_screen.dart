@@ -2,7 +2,9 @@ import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import '../data/vehicle_data.dart';
 import '../models/vehicle.dart';
+import '../services/settings_service.dart';
 import '../services/storage_service.dart';
 import '../services/vehicle_service.dart';
 import '../theme.dart';
@@ -40,6 +42,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
   bool _isLoading = false;
   DateTime? _nextTuev;
   DateTime? _nextInspection;
+  DateTime? _registrationDate;
 
   bool get _isEditing => widget.vehicle != null;
 
@@ -66,6 +69,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
       _fuelType = widget.vehicle!.fuelType;
       _nextTuev = widget.vehicle!.nextTuev;
       _nextInspection = widget.vehicle!.nextInspection;
+      _registrationDate = widget.vehicle!.registrationDate;
       _existingImageUrl = widget.vehicle!.imageUrl;
     }
   }
@@ -142,6 +146,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
         fuelType: _fuelType,
         licensePlate: _licensePlateController.text.trim(),
         mileage: int.parse(_mileageController.text.trim()),
+        registrationDate: _registrationDate!,
         imageUrl: imageUrl,
         nextTuev: _nextTuev,
         nextInspection: _nextInspection,
@@ -174,6 +179,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
             fuelType: vehicle.fuelType,
             licensePlate: vehicle.licensePlate,
             mileage: vehicle.mileage,
+            registrationDate: vehicle.registrationDate,
             imageUrl: correctUrl,
             nextTuev: vehicle.nextTuev,
             nextInspection: vehicle.nextInspection,
@@ -222,9 +228,30 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
             children: [
               _buildImagePicker(context),
               const SizedBox(height: 16),
-              _buildTextField(_brandController, 'Marke', 'z.B. Audi'),
+              _buildSearchablePicker(
+                label: 'Marke',
+                value: _brandController.text,
+                items: [...vehicleBrands, 'Sonstige'],
+                onChanged: (v) {
+                  setState(() {
+                    final changed = v != _brandController.text;
+                    _brandController.text = v;
+                    if (changed) _modelController.text = '';
+                  });
+                },
+                allowCustom: true,
+              ),
               const SizedBox(height: 12),
-              _buildTextField(_modelController, 'Modell', 'z.B. A4'),
+              _buildSearchablePicker(
+                label: 'Modell',
+                value: _modelController.text,
+                items: [
+                  ...?vehicleModels[_brandController.text],
+                  'Sonstiges',
+                ],
+                onChanged: (v) => setState(() => _modelController.text = v),
+                allowCustom: true,
+              ),
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -261,6 +288,13 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
               const SizedBox(height: 12),
               _buildTextField(_mileageController, 'Kilometerstand', 'z.B. 12450',
                   keyboardType: TextInputType.number),
+              const SizedBox(height: 12),
+              _buildRequiredDateField(
+                label: 'Zugelassen seit',
+                value: _registrationDate,
+                onPicked: (d) => setState(() => _registrationDate = d),
+                allowPast: true,
+              ),
               const SizedBox(height: 28),
               // Section: Termine & Intervalle
               Align(
@@ -290,7 +324,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
               const SizedBox(height: 12),
               _buildTextField(
                 _oilChangeIntervalController,
-                'Ölwechsel-Intervall (km)',
+                'Ölwechsel-Intervall (${SettingsService().distanceUnit})',
                 'z.B. 15000',
                 keyboardType: TextInputType.number,
                 required: false,
@@ -298,7 +332,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
               const SizedBox(height: 12),
               _buildTextField(
                 _lastOilChangeMileageController,
-                'Letzter Ölwechsel (km-Stand)',
+                'Letzter Ölwechsel (${SettingsService().distanceUnit}-Stand)',
                 'z.B. 230000',
                 keyboardType: TextInputType.number,
                 required: false,
@@ -445,6 +479,199 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
           ? (v) => (v == null || v.trim().isEmpty) ? 'Pflichtfeld' : null
           : null,
       decoration: _inputDecoration(context, label, hint: hint),
+    );
+  }
+
+  Widget _buildSearchablePicker({
+    required String label,
+    required String value,
+    required List<String> items,
+    required ValueChanged<String> onChanged,
+    bool allowCustom = false,
+  }) {
+    return FormField<String>(
+      validator: (_) => value.isEmpty ? 'Pflichtfeld' : null,
+      builder: (state) => InkWell(
+        onTap: () => _showSearchSheet(label, items, onChanged, state, allowCustom),
+        borderRadius: BorderRadius.circular(12),
+        child: InputDecorator(
+          decoration: _inputDecoration(context, label).copyWith(
+            errorText: state.errorText,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  value.isNotEmpty ? value : 'Auswählen',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: value.isNotEmpty ? context.textPrimary : context.textSecondary,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Icon(Icons.arrow_drop_down, color: context.textSecondary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showSearchSheet(
+    String label,
+    List<String> items,
+    ValueChanged<String> onChanged,
+    FormFieldState<String> fieldState,
+    bool allowCustom,
+  ) {
+    final searchController = TextEditingController();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: context.cardColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            final query = searchController.text.toLowerCase();
+            final filtered = items
+                .where((item) => item.toLowerCase().contains(query))
+                .toList();
+
+            return DraggableScrollableSheet(
+              initialChildSize: 0.6,
+              maxChildSize: 0.9,
+              minChildSize: 0.3,
+              expand: false,
+              builder: (ctx, scrollController) {
+                return Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      Text(
+                        label,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: searchController,
+                        autofocus: true,
+                        decoration: InputDecoration(
+                          hintText: 'Suchen...',
+                          prefixIcon: const Icon(Icons.search),
+                          filled: true,
+                          fillColor: context.inputFill,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: context.borderColor),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: context.borderColor),
+                          ),
+                        ),
+                        onChanged: (_) => setSheetState(() {}),
+                      ),
+                      const SizedBox(height: 12),
+                      if (allowCustom && query.isNotEmpty && !filtered.any((f) => f.toLowerCase() == query))
+                        ListTile(
+                          leading: const Icon(Icons.add, color: Color(0xFF1A5276)),
+                          title: Text('"${searchController.text}" verwenden'),
+                          onTap: () {
+                            onChanged(searchController.text);
+                            fieldState.didChange(searchController.text);
+                            Navigator.pop(ctx);
+                          },
+                        ),
+                      Expanded(
+                        child: ListView.builder(
+                          controller: scrollController,
+                          itemCount: filtered.length,
+                          itemBuilder: (ctx, index) {
+                            final item = filtered[index];
+                            return ListTile(
+                              title: Text(item),
+                              onTap: () {
+                                if (item == 'Sonstige' || item == 'Sonstiges') {
+                                  // Clear so user types manually
+                                  searchController.clear();
+                                  setSheetState(() {});
+                                } else {
+                                  onChanged(item);
+                                  fieldState.didChange(item);
+                                  Navigator.pop(ctx);
+                                }
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildRequiredDateField({
+    required String label,
+    required DateTime? value,
+    required ValueChanged<DateTime?> onPicked,
+    bool allowPast = false,
+  }) {
+    return FormField<DateTime>(
+      validator: (_) => value == null ? 'Pflichtfeld' : null,
+      builder: (state) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            onTap: () async {
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: value ?? DateTime.now(),
+                firstDate: allowPast ? DateTime(1970) : DateTime.now(),
+                lastDate: allowPast ? DateTime.now() : DateTime.now().add(const Duration(days: 365 * 5)),
+              );
+              if (picked != null) {
+                onPicked(picked);
+                state.didChange(picked);
+              }
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: InputDecorator(
+              decoration: _inputDecoration(context, label).copyWith(
+                errorText: state.errorText,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    value != null
+                        ? '${value.day.toString().padLeft(2, '0')}.${value.month.toString().padLeft(2, '0')}.${value.year}'
+                        : 'Nicht gesetzt',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: value != null ? context.textPrimary : context.textSecondary,
+                    ),
+                  ),
+                  Icon(Icons.calendar_today, size: 20, color: context.textSecondary),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
