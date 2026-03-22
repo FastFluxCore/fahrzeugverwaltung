@@ -275,7 +275,7 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
               _buildField(context, _costController, 'Kosten (${_settings.currency})', 'z.B. 250.00',
                   keyboardType: TextInputType.number),
               const SizedBox(height: 12),
-              _buildField(context, _mileageController, _settings.isKm ? 'Kilometerstand' : 'Meilenstand', 'z.B. 12500',
+              _buildField(context, _mileageController, 'Kilometerstand', 'z.B. 12500',
                   keyboardType: TextInputType.number),
               const SizedBox(height: 12),
               _buildField(context,

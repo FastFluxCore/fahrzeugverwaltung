@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../models/vehicle.dart';
+import '../services/seed_service.dart';
 import '../services/vehicle_service.dart';
 import 'add_fuel_screen.dart';
 import 'add_other_cost_screen.dart';
@@ -321,6 +322,44 @@ class _AppShellState extends State<AppShell> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1A5276),
                     foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Musterdaten werden geladen...')),
+                    );
+                    try {
+                      await SeedService().seedAll();
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Musterdaten erfolgreich geladen!')),
+                        );
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Fehler: $e')),
+                        );
+                      }
+                    }
+                  },
+                  icon: const Icon(Icons.dataset_outlined),
+                  label: const Text(
+                    'Musterdaten laden',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF1A5276),
+                    side: const BorderSide(color: Color(0xFF1A5276)),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),

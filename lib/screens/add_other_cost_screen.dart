@@ -7,7 +7,6 @@ import '../services/storage_service.dart';
 import '../theme.dart';
 import '../widgets/document_picker.dart';
 import '../widgets/receipt_scan_button.dart';
-import '../widgets/sheet_picker.dart';
 
 class AddOtherCostScreen extends StatefulWidget {
   final String vehicleId;
@@ -32,10 +31,9 @@ class _AddOtherCostScreenState extends State<AddOtherCostScreen> {
 
   late final TextEditingController _descriptionController;
   late final TextEditingController _costController;
+  late final TextEditingController _categoryController;
   late final TextEditingController _notesController;
   late DateTime _selectedDate;
-  String _category = 'Versicherung';
-  String _interval = 'Einmalig';
   bool _isLoading = false;
 
   static const _geminiKey = String.fromEnvironment('GEMINI_API_KEY');
@@ -50,32 +48,13 @@ class _AddOtherCostScreenState extends State<AddOtherCostScreen> {
     if (result.description != null && result.description!.isNotEmpty) {
       _descriptionController.text = result.description!;
     }
-    if (result.category != null && _categories.contains(result.category)) {
-      setState(() => _category = result.category!);
+    if (result.category != null && result.category!.isNotEmpty) {
+      _categoryController.text = result.category!;
     }
     if (result.notes != null && result.notes!.isNotEmpty) {
       _notesController.text = result.notes!;
     }
   }
-
-  static const _categories = [
-    'Versicherung',
-    'Steuer',
-    'Parkgebühren',
-    'Maut',
-    'Waschen',
-    'Zubehör',
-    'Finanzierung',
-    'Sonstiges',
-  ];
-
-  static const _intervals = [
-    'Einmalig',
-    'Monatlich',
-    'Vierteljährlich',
-    'Halbjährlich',
-    'Jährlich',
-  ];
 
   @override
   void initState() {
@@ -83,20 +62,16 @@ class _AddOtherCostScreenState extends State<AddOtherCostScreen> {
     final e = widget.entry;
     _descriptionController = TextEditingController(text: e?.description);
     _costController = TextEditingController(text: e?.cost.toStringAsFixed(2));
+    _categoryController = TextEditingController(text: e?.category);
     _notesController = TextEditingController(text: e?.notes);
     _selectedDate = e?.date ?? DateTime.now();
-    if (e?.category != null && _categories.contains(e!.category)) {
-      _category = e.category!;
-    }
-    if (e?.interval != null && _intervals.contains(e!.interval)) {
-      _interval = e.interval!;
-    }
   }
 
   @override
   void dispose() {
     _descriptionController.dispose();
     _costController.dispose();
+    _categoryController.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -158,8 +133,9 @@ class _AddOtherCostScreenState extends State<AddOtherCostScreen> {
         date: _selectedDate,
         cost: cost,
         description: _descriptionController.text.trim(),
-        category: _category,
-        interval: _interval,
+        category: _categoryController.text.trim().isEmpty
+            ? null
+            : _categoryController.text.trim(),
         notes: _notesController.text.trim().isEmpty
             ? null
             : _notesController.text.trim(),
@@ -241,25 +217,14 @@ class _AddOtherCostScreenState extends State<AddOtherCostScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              SheetPicker(
-                label: 'Kategorie',
-                value: _category,
-                items: _categories,
-                onChanged: (v) => setState(() => _category = v),
-              ),
+              _buildField(context,
+                  _categoryController, 'Kategorie', 'z.B. Versicherung, Steuer, Reifen'),
               const SizedBox(height: 12),
               _buildField(context,
                   _descriptionController, 'Beschreibung', 'z.B. KFZ-Steuer 2026'),
               const SizedBox(height: 12),
               _buildField(context, _costController, 'Kosten (${_settings.currency})', 'z.B. 120.00',
                   keyboardType: TextInputType.number),
-              const SizedBox(height: 12),
-              SheetPicker(
-                label: 'Intervall',
-                value: _interval,
-                items: _intervals,
-                onChanged: (v) => setState(() => _interval = v),
-              ),
               const SizedBox(height: 12),
               _buildField(context,
                   _notesController, 'Notizen (optional)', 'Weitere Details...',

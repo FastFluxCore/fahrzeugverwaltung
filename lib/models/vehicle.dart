@@ -8,6 +8,7 @@ class Vehicle {
   final String fuelType;
   final String licensePlate;
   final int mileage;
+  final DateTime registrationDate;
   final String? imageUrl;
 
   // Reminders (current / computed)
@@ -31,6 +32,7 @@ class Vehicle {
     required this.fuelType,
     required this.licensePlate,
     required this.mileage,
+    required this.registrationDate,
     this.imageUrl,
     this.nextTuev,
     this.nextInspection,
@@ -54,6 +56,9 @@ class Vehicle {
       fuelType: map['fuelType'] ?? '',
       licensePlate: map['licensePlate'] ?? '',
       mileage: map['mileage'] ?? 0,
+      registrationDate: map['registrationDate'] != null
+          ? DateTime.parse(map['registrationDate'])
+          : DateTime.now(),
       imageUrl: map['imageUrl'],
       nextTuev: map['nextTuev'] != null ? DateTime.parse(map['nextTuev']) : null,
       nextInspection: map['nextInspection'] != null ? DateTime.parse(map['nextInspection']) : null,
@@ -75,6 +80,7 @@ class Vehicle {
       'fuelType': fuelType,
       'licensePlate': licensePlate,
       'mileage': mileage,
+      'registrationDate': registrationDate.toIso8601String(),
       'imageUrl': imageUrl,
     };
     if (nextTuev != null) map['nextTuev'] = nextTuev!.toIso8601String();

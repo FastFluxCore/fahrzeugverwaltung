@@ -114,12 +114,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       SummaryCard(
                         icon: Icons.account_balance_wallet,
                         value: _settings.formatCost(monthCosts),
-                        label: 'Kosten / Monat',
+                        label: 'Kosten akt. Monat',
                       ),
                       SummaryCard(
                         icon: Icons.local_gas_station,
                         value: avgConsumption,
-                        label: 'Ø Verbr. / ${_settings.consumptionUnit}',
+                        label: 'Ø Verbr. / L/100km',
                       ),
                       SummaryCard(
                         icon: Icons.format_list_numbered,

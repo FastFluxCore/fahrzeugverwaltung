@@ -14,6 +14,17 @@ class AppTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
       ),
+      inputDecorationTheme: InputDecorationTheme(
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFF1A5276), width: 1.5),
+        ),
+      ),
+      textSelectionTheme: const TextSelectionThemeData(
+        cursorColor: Color(0xFF1A5276),
+        selectionColor: Color(0x401A5276),
+        selectionHandleColor: Color(0xFF1A5276),
+      ),
       useMaterial3: true,
     );
   }
@@ -31,6 +42,17 @@ class AppTheme {
         backgroundColor: Color(0xFF121212),
         elevation: 0,
         scrolledUnderElevation: 0,
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFF1A5276), width: 1.5),
+        ),
+      ),
+      textSelectionTheme: const TextSelectionThemeData(
+        cursorColor: Color(0xFF5DADE2),
+        selectionColor: Color(0x405DADE2),
+        selectionHandleColor: Color(0xFF5DADE2),
       ),
       useMaterial3: true,
     );

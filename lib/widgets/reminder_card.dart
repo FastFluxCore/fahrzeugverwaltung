@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/vehicle.dart';
+import '../services/settings_service.dart';
 import '../theme.dart';
 
 enum ReminderUrgency { ok, upcoming, overdue }
@@ -66,6 +67,7 @@ List<Reminder> buildReminders(Vehicle vehicle) {
 
   // Ölwechsel
   if (vehicle.oilChangeInterval != null && vehicle.lastOilChangeMileage != null) {
+    final unit = SettingsService().distanceUnit;
     final nextOilChange = vehicle.lastOilChangeMileage! + vehicle.oilChangeInterval!;
     final remaining = nextOilChange - vehicle.mileage;
     final urgency = remaining <= 0
@@ -74,8 +76,8 @@ List<Reminder> buildReminders(Vehicle vehicle) {
             ? ReminderUrgency.upcoming
             : ReminderUrgency.ok;
     final subtitle = remaining <= 0
-        ? 'Überfällig seit ${-remaining} km'
-        : 'In $remaining km (bei $nextOilChange km)';
+        ? 'Überfällig seit ${-remaining} $unit'
+        : 'In $remaining $unit (bei $nextOilChange $unit)';
     reminders.add(Reminder(
       title: 'Ölwechsel',
       subtitle: subtitle,

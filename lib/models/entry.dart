@@ -25,7 +25,6 @@ class Entry {
 
   // OtherCost-specific
   final String? category;
-  final String? interval;
 
   // Documents
   final List<String> documentUrls;
@@ -49,7 +48,6 @@ class Entry {
     this.workshop,
     this.notes,
     this.category,
-    this.interval,
     this.documentUrls = const [],
   });
 
@@ -99,7 +97,6 @@ class Entry {
       description: map['description'] ?? 'Sonstiges',
       subtitle: map['category'],
       category: map['category'],
-      interval: map['interval'],
       notes: map['notes'],
       documentUrls: List<String>.from(map['documentUrls'] ?? []),
     );
@@ -128,7 +125,6 @@ class Entry {
     }
     if (type == EntryType.otherCost) {
       map['category'] = category;
-      map['interval'] = interval;
       map['notes'] = notes;
     }
     if (documentUrls.isNotEmpty) map['documentUrls'] = documentUrls;

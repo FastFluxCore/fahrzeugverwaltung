@@ -19,6 +19,17 @@ class AuthService {
   Future<void> deleteAccount() async {
     final user = _auth.currentUser;
     if (user == null) return;
-    await user.delete();
+    try {
+      await user.delete();
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'requires-recent-login') {
+        // Re-authenticate with Google then retry
+        final provider = GoogleAuthProvider();
+        await user.reauthenticateWithPopup(provider);
+        await user.delete();
+      } else {
+        rethrow;
+      }
+    }
   }
 }

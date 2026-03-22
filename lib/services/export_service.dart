@@ -2,8 +2,10 @@ import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:http/http.dart' as http;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 import '../models/entry.dart';
 import '../models/vehicle.dart';
@@ -44,7 +46,6 @@ class ExportService {
     bool includeServices = true,
     bool includeFuel = true,
     bool includeOtherCosts = true,
-    bool includeDocuments = true,
   }) async {
     final allEntries = await _fetchAllEntries(vehicle.id);
     final services = includeServices
@@ -65,7 +66,11 @@ class ExportService {
     final fuelCost = fuelLogs.fold<double>(0, (s, e) => s + e.cost);
     final otherCostTotal = otherCosts.fold<double>(0, (s, e) => s + e.cost);
 
-    final pdf = pw.Document();
+    final regular = await PdfGoogleFonts.notoSansRegular();
+    final bold = await PdfGoogleFonts.notoSansBold();
+    final theme = pw.ThemeData.withFont(base: regular, bold: bold);
+
+    final pdf = pw.Document(theme: theme);
 
     final headerStyle = pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold);
     final cellStyle = const pw.TextStyle(fontSize: 9);
@@ -128,11 +133,11 @@ class ExportService {
               headers: ['Datum', 'Art', distanceUnit, 'Kosten', 'Werkstatt', 'Notizen'],
               data: services.map((e) => [
                 fmtDate(e.date),
-                e.description,
-                e.mileage?.toString() ?? '–',
+                'Service',
+                e.mileage?.toString() ?? '-',
                 fmtCost(e.cost),
-                e.workshop ?? '–',
-                e.notes ?? '–',
+                e.workshop ?? '-',
+                e.description,
               ]).toList(),
             ),
             pw.SizedBox(height: 24),
@@ -159,11 +164,11 @@ class ExportService {
               headers: ['Datum', volumeUnit, '$currency/$volumeUnit', 'Kosten', distanceUnit, 'Tankstelle'],
               data: fuelLogs.map((e) => [
                 fmtDate(e.date),
-                e.liters?.toStringAsFixed(2) ?? '–',
-                e.pricePerLiter?.toStringAsFixed(3) ?? '–',
+                e.liters?.toStringAsFixed(2) ?? '-',
+                e.pricePerLiter?.toStringAsFixed(3) ?? '-',
                 fmtCost(e.cost),
-                e.mileage?.toString() ?? '–',
-                e.station ?? '–',
+                e.mileage?.toString() ?? '-',
+                e.station ?? '-',
               ]).toList(),
             ),
             pw.SizedBox(height: 24),
@@ -183,26 +188,77 @@ class ExportService {
                 0: const pw.FixedColumnWidth(65),
                 1: const pw.FlexColumnWidth(2),
                 2: const pw.FlexColumnWidth(3),
-                3: const pw.FixedColumnWidth(60),
-                4: const pw.FixedColumnWidth(70),
+                3: const pw.FixedColumnWidth(70),
               },
-              headers: ['Datum', 'Kategorie', 'Beschreibung', 'Kosten', 'Intervall'],
+              headers: ['Datum', 'Kategorie', 'Beschreibung', 'Kosten'],
               data: otherCosts.map((e) => [
                 fmtDate(e.date),
-                e.category ?? '–',
+                e.category ?? '-',
                 e.description,
                 fmtCost(e.cost),
-                e.interval ?? '–',
               ]).toList(),
             ),
             pw.SizedBox(height: 24),
           ],
-
-          // Documents list
-          if (includeDocuments) _buildDocumentsList(entries),
         ],
       ),
     );
+
+    return pdf.save();
+  }
+
+  /// Generates a second PDF containing all attached document images.
+  Future<Uint8List?> generateDocumentsPdf({
+    required Vehicle vehicle,
+  }) async {
+    final allEntries = await _fetchAllEntries(vehicle.id);
+    final withDocs = allEntries.where((e) => e.documentUrls.isNotEmpty).toList();
+    if (withDocs.isEmpty) return null;
+
+    final regular = await PdfGoogleFonts.notoSansRegular();
+    final bold = await PdfGoogleFonts.notoSansBold();
+    final pdf = pw.Document(theme: pw.ThemeData.withFont(base: regular, bold: bold));
+
+    for (final entry in withDocs) {
+      final date = '${entry.date.day.toString().padLeft(2, '0')}.${entry.date.month.toString().padLeft(2, '0')}.${entry.date.year}';
+      final title = entry.type == EntryType.service
+          ? 'Service'
+          : entry.type == EntryType.fuel
+              ? 'Tanken'
+              : entry.description;
+
+      for (var i = 0; i < entry.documentUrls.length; i++) {
+        try {
+          final response = await http.get(Uri.parse(entry.documentUrls[i]));
+          if (response.statusCode != 200) continue;
+
+          final image = pw.MemoryImage(response.bodyBytes);
+          pdf.addPage(
+            pw.Page(
+              pageFormat: PdfPageFormat.a4,
+              margin: const pw.EdgeInsets.all(24),
+              build: (context) => pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text(
+                    '$date - $title (Dokument ${i + 1})',
+                    style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+                  ),
+                  pw.SizedBox(height: 12),
+                  pw.Expanded(
+                    child: pw.Center(
+                      child: pw.Image(image, fit: pw.BoxFit.contain),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        } catch (_) {
+          // Skip documents that can't be downloaded
+        }
+      }
+    }
 
     return pdf.save();
   }
@@ -279,44 +335,4 @@ class ExportService {
     );
   }
 
-  pw.Widget _buildDocumentsList(List<Entry> entries) {
-    final docsEntries = entries.where((e) => e.documentUrls.isNotEmpty).toList();
-    if (docsEntries.isEmpty) return pw.SizedBox.shrink();
-
-    final sectionStyle = pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold);
-
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        pw.Text('Hinterlegte Dokumente', style: sectionStyle),
-        pw.SizedBox(height: 8),
-        ...docsEntries.map((e) {
-          final date = '${e.date.day.toString().padLeft(2, '0')}.${e.date.month.toString().padLeft(2, '0')}.${e.date.year}';
-          return pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Text(
-                '$date – ${e.description}',
-                style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
-              ),
-              ...e.documentUrls.asMap().entries.map((urlEntry) {
-                final idx = urlEntry.key + 1;
-                return pw.Padding(
-                  padding: const pw.EdgeInsets.only(left: 12, top: 2),
-                  child: pw.UrlLink(
-                    destination: urlEntry.value,
-                    child: pw.Text(
-                      'Dokument $idx',
-                      style: const pw.TextStyle(fontSize: 9, color: PdfColors.blue700, decoration: pw.TextDecoration.underline),
-                    ),
-                  ),
-                );
-              }),
-              pw.SizedBox(height: 6),
-            ],
-          );
-        }),
-      ],
-    );
-  }
 }

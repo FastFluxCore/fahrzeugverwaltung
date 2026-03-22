@@ -68,12 +68,14 @@ class _CostScreenState extends State<CostScreen> {
               .where((e) => e.type == EntryType.otherCost)
               .fold<double>(0, (s, e) => s + e.cost);
 
-          // Months in period for average
-          final periodMonths = _selectedPeriod == 3
-              ? _calcMonthSpan(entries)
-              : [3, 6, 12][_selectedPeriod];
+          // Months since registration for avg calculation
+          final periodMonths = _calcMonthsSinceRegistration(
+              widget.selectedVehicle, _selectedPeriod);
           final avgPerMonth =
               periodMonths > 0 ? totalCost / periodMonths : 0.0;
+
+          // Cost per 100 km
+          final costPer100Km = _calcCostPer100Km(entries, widget.selectedVehicle);
 
           // Percentages for donut
           final fuelPct = totalCost > 0 ? (fuelCost / totalCost * 100) : 0.0;
@@ -82,8 +84,9 @@ class _CostScreenState extends State<CostScreen> {
           final otherPct =
               totalCost > 0 ? (otherCost / totalCost * 100) : 0.0;
 
-          // Monthly data for bar chart
-          final monthlyData = _calcMonthlyData(entries);
+          // Monthly data for bar chart — follows filter
+          final barMonths = _selectedPeriod == 3 ? 12 : [3, 6, 12][_selectedPeriod];
+          final monthlyData = _calcMonthlyData(entries, barMonths);
 
           return SingleChildScrollView(
             child: Column(
@@ -157,6 +160,12 @@ class _CostScreenState extends State<CostScreen> {
                         value: _formatCurrency(avgPerMonth),
                       ),
                       _buildKpiCard(
+                        label: 'Kosten / 100 ${_settings.distanceUnit}',
+                        value: costPer100Km != null
+                            ? '${costPer100Km.toStringAsFixed(2).replaceAll('.', ',')} ${_settings.currency}'
+                            : '–',
+                      ),
+                      _buildKpiCard(
                         label: 'Kraftstoff',
                         value: _formatCurrency(fuelCost),
                         subtitle: totalCost > 0
@@ -170,6 +179,13 @@ class _CostScreenState extends State<CostScreen> {
                             ? '${servicePct.toStringAsFixed(0)}% vom Gesamt'
                             : null,
                       ),
+                      _buildKpiCard(
+                        label: 'Sonstige Kosten',
+                        value: _formatCurrency(otherCost),
+                        subtitle: totalCost > 0
+                            ? '${otherPct.toStringAsFixed(0)}% vom Gesamt'
+                            : null,
+                      ),
                     ],
                   ),
                 ),
@@ -179,7 +195,7 @@ class _CostScreenState extends State<CostScreen> {
                     fuelCost, serviceCost, otherCost, fuelPct, servicePct, otherPct),
                 const SizedBox(height: 20),
                 // Bar Chart
-                _buildMonthlyChart(monthlyData),
+                _buildMonthlyChart(monthlyData, barMonths),
                 const SizedBox(height: 20),
                 // Fuel consumption trend
                 _buildConsumptionTrend(allEntries),
@@ -192,20 +208,32 @@ class _CostScreenState extends State<CostScreen> {
     );
   }
 
-  int _calcMonthSpan(List<Entry> entries) {
-    if (entries.isEmpty) return 1;
-    final sorted = [...entries]..sort((a, b) => a.date.compareTo(b.date));
-    final first = sorted.first.date;
-    final last = sorted.last.date;
-    final months =
-        (last.year - first.year) * 12 + (last.month - first.month) + 1;
-    return months < 1 ? 1 : months;
+  int _calcMonthsSinceRegistration(Vehicle vehicle, int selectedPeriod) {
+    final now = DateTime.now();
+    final reg = vehicle.registrationDate;
+    final totalMonths = (now.year - reg.year) * 12 + (now.month - reg.month);
+    if (selectedPeriod == 3) return totalMonths < 1 ? 1 : totalMonths; // Gesamt
+    final filterMonths = [3, 6, 12][selectedPeriod];
+    final capped = totalMonths < filterMonths ? totalMonths : filterMonths;
+    return capped < 1 ? 1 : capped;
   }
 
-  List<_MonthData> _calcMonthlyData(List<Entry> entries) {
+  double? _calcCostPer100Km(List<Entry> entries, Vehicle vehicle) {
+    final withMileage = entries
+        .where((e) => e.mileage != null)
+        .toList()
+      ..sort((a, b) => a.mileage!.compareTo(b.mileage!));
+    if (withMileage.length < 2) return null;
+    final km = withMileage.last.mileage! - withMileage.first.mileage!;
+    if (km <= 0) return null;
+    final totalCost = entries.fold<double>(0, (s, e) => s + e.cost);
+    return totalCost / km * 100;
+  }
+
+  List<_MonthData> _calcMonthlyData(List<Entry> entries, int monthCount) {
     final now = DateTime.now();
     final months = <_MonthData>[];
-    for (var i = 5; i >= 0; i--) {
+    for (var i = monthCount - 1; i >= 0; i--) {
       final date = DateTime(now.year, now.month - i);
       final monthEntries = entries.where(
           (e) => e.date.year == date.year && e.date.month == date.month);
@@ -423,7 +451,7 @@ class _CostScreenState extends State<CostScreen> {
     );
   }
 
-  Widget _buildMonthlyChart(List<_MonthData> data) {
+  Widget _buildMonthlyChart(List<_MonthData> data, int barMonths) {
     final maxY = data.fold<double>(0, (max, d) => d.value > max ? d.value : max);
     final chartMaxY = maxY > 0 ? maxY * 1.2 : 100;
 
@@ -454,7 +482,7 @@ class _CostScreenState extends State<CostScreen> {
                 ),
               ),
               Text(
-                'Letzte 6 Monate',
+                'Letzte $barMonths Monate',
                 style: TextStyle(
                   fontSize: 12,
                   color: context.textSecondary.withValues(alpha: 0.8),
@@ -533,7 +561,7 @@ class _CostScreenState extends State<CostScreen> {
                         color: isLast
                             ? const Color(0xFF1A5276)
                             : const Color(0xFFD6E4F0),
-                        width: 28,
+                        width: barMonths <= 6 ? 28 : 16,
                         borderRadius: const BorderRadius.vertical(
                             top: Radius.circular(6)),
                       ),
@@ -547,27 +575,42 @@ class _CostScreenState extends State<CostScreen> {
       ),
     );
   }
-  List<_ConsumptionPoint> _calcConsumptionPoints(List<Entry> entries) {
+  List<_ConsumptionPoint> _calcMonthlyConsumption(List<Entry> entries) {
     final fuelEntries = entries
         .where((e) => e.type == EntryType.fuel && e.liters != null && e.mileage != null)
         .toList()
       ..sort((a, b) => a.mileage!.compareTo(b.mileage!));
 
-    final points = <_ConsumptionPoint>[];
+    // Calculate per fill-up consumption
+    final perFillUp = <(DateTime date, double consumption)>[];
     for (var i = 1; i < fuelEntries.length; i++) {
       final prev = fuelEntries[i - 1];
       final curr = fuelEntries[i];
       final distKm = curr.mileage! - prev.mileage!;
       if (distKm > 0) {
-        final consumption = curr.liters! / distKm * 100;
-        points.add(_ConsumptionPoint(curr.date, consumption));
+        perFillUp.add((curr.date, curr.liters! / distKm * 100));
+      }
+    }
+
+    // Group by month and average
+    final now = DateTime.now();
+    final points = <_ConsumptionPoint>[];
+    for (var i = 11; i >= 0; i--) {
+      final date = DateTime(now.year, now.month - i);
+      final monthValues = perFillUp
+          .where((p) => p.$1.year == date.year && p.$1.month == date.month)
+          .map((p) => p.$2)
+          .toList();
+      if (monthValues.isNotEmpty) {
+        final avg = monthValues.reduce((a, b) => a + b) / monthValues.length;
+        points.add(_ConsumptionPoint(date, avg));
       }
     }
     return points;
   }
 
   Widget _buildConsumptionTrend(List<Entry> entries) {
-    final points = _calcConsumptionPoints(entries);
+    final points = _calcMonthlyConsumption(entries);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -595,7 +638,7 @@ class _CostScreenState extends State<CostScreen> {
                 ),
               ),
               Text(
-                _settings.consumptionUnit,
+                'L/100km',
                 style: TextStyle(
                   fontSize: 12,
                   color: context.textSecondary.withValues(alpha: 0.8),
@@ -635,9 +678,6 @@ class _CostScreenState extends State<CostScreen> {
     for (var i = 0; i < points.length; i++) {
       spots.add(FlSpot(i.toDouble(), points[i].value));
     }
-
-    // Show max ~6 labels on x-axis
-    final labelInterval = points.length <= 6 ? 1 : (points.length / 6).ceil();
 
     return SizedBox(
       height: 200,
@@ -692,14 +732,11 @@ class _CostScreenState extends State<CostScreen> {
                 getTitlesWidget: (value, meta) {
                   final index = value.toInt();
                   if (index < 0 || index >= points.length) return const SizedBox.shrink();
-                  if (index % labelInterval != 0 && index != points.length - 1) {
-                    return const SizedBox.shrink();
-                  }
                   final d = points[index].date;
                   return Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(
-                      '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}',
+                      _shortMonth(d.month),
                       style: TextStyle(fontSize: 10, color: context.textSecondary),
                     ),
                   );
@@ -739,7 +776,7 @@ class _CostScreenState extends State<CostScreen> {
                 return spots.map((spot) {
                   if (spot.barIndex == 1) return null; // skip avg line tooltip
                   return LineTooltipItem(
-                    '${spot.y.toStringAsFixed(1).replaceAll('.', ',')} ${_settings.consumptionUnit}',
+                    '${spot.y.toStringAsFixed(1).replaceAll('.', ',')} L/100km',
                     const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,

@@ -143,7 +143,7 @@ class _AddFuelScreenState extends State<AddFuelScreen> {
       final dist = mileage - widget.currentMileage;
       if (dist > 0) {
         final consumption = liters / dist * 100;
-        preview = '${consumption.toStringAsFixed(1).replaceAll('.', ',')} ${_settings.consumptionUnit}';
+        preview = '${consumption.toStringAsFixed(1).replaceAll('.', ',')} L/100km';
       }
     }
 

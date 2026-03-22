@@ -25,14 +25,19 @@ class VehicleService {
   }
 
   Future<void> deleteVehicle(String vehicleId) async {
-    // Delete subcollections
     final subcollections = ['services', 'fuelLogs', 'otherCosts', 'reminders', 'trips'];
-    for (final sub in subcollections) {
-      final docs = await _vehiclesRef.doc(vehicleId).collection(sub).get();
-      for (final doc in docs.docs) {
-        await doc.reference.delete();
+    // Fetch all subcollections in parallel
+    final snapshots = await Future.wait(
+      subcollections.map((sub) => _vehiclesRef.doc(vehicleId).collection(sub).get()),
+    );
+    // Delete all documents in parallel
+    final deletions = <Future>[];
+    for (final snapshot in snapshots) {
+      for (final doc in snapshot.docs) {
+        deletions.add(doc.reference.delete());
       }
     }
+    await Future.wait(deletions);
     await _vehiclesRef.doc(vehicleId).delete();
   }
 
